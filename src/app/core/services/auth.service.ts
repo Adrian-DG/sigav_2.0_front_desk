@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, firstValueFrom, tap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { AuthenticatedResponse, LoginRequest, SesionViewModel } from '../models/auth.model';
@@ -12,7 +12,7 @@ const TOKEN_EXPIRATION_KEY = 'sigav.tokenExpiration';
 /**
  * Sesión del front desk: token de audiencia "web" (Authentication/login) + identidad obtenida de
  * GET /authentication/sesion. El token vive en localStorage (sobrevive a cerrar la pestaña);
- * sesion() solo vive en memoria y se vuelve a pedir al recargar la app (ver AppComponent/APP_INITIALIZER).
+ * sesion() solo vive en memoria y se vuelve a pedir al recargar la app (restaurarSesion, en app.config).
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -33,13 +33,15 @@ export class AuthService {
   }
 
   login(request: LoginRequest): Observable<AuthenticatedResponse> {
-    return this.http.post<AuthenticatedResponse>(`${environment.apiUrl}/authentication/login`, request).pipe(
-      tap((response) => {
-        localStorage.setItem(TOKEN_KEY, response.token);
-        localStorage.setItem(TOKEN_EXPIRATION_KEY, response.expiration);
-        this.tokenSignal.set(response.token);
-      }),
-    );
+    return this.http
+      .post<AuthenticatedResponse>(`${environment.apiUrl}/authentication/login`, request)
+      .pipe(
+        tap((response) => {
+          localStorage.setItem(TOKEN_KEY, response.token);
+          localStorage.setItem(TOKEN_EXPIRATION_KEY, response.expiration);
+          this.tokenSignal.set(response.token);
+        }),
+      );
   }
 
   /** Hidrata sesion() desde el token ya guardado. Si el token venció o es inválido, el 401 limpia la sesión (ver error.interceptor). */
@@ -47,6 +49,20 @@ export class AuthService {
     return this.http
       .get<SesionViewModel>(`${environment.apiUrl}/authentication/sesion`)
       .pipe(tap((sesion) => this.sesionSignal.set(sesion)));
+  }
+
+  /**
+   * Al arrancar la app con un token guardado: sin esto, tras recargar la página permisos() queda
+   * vacío y el menú y las guardas de permiso ocultarían todo. Un token vencido termina en logout
+   * (error.interceptor); un fallo de red no bloquea el arranque.
+   */
+  async restaurarSesion(): Promise<void> {
+    if (!this.tokenSignal()) return;
+    try {
+      await firstValueFrom(this.cargarSesion());
+    } catch {
+      // El error ya lo manejó el interceptor (401 → logout); con otros, la app arranca sin sesión hidratada
+    }
   }
 
   logout(): void {

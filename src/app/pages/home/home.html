@@ -1,7 +1,53 @@
-<div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-neutral-50 px-6 text-center">
-  <h1 class="text-2xl font-extrabold text-neutral-900">Hola, {{ auth.sesion()?.nombre ?? 'agente' }}</h1>
-  <p class="text-sm font-medium text-neutral-500">El home del front desk todavía no está implementado.</p>
-  <div class="w-40">
-    <app-button variant="ghost" (click)="auth.logout()">Cerrar sesión</app-button>
-  </div>
+<div class="mx-auto max-w-5xl px-6 py-10 lg:px-10">
+  <p class="text-sm font-semibold text-neutral-500 first-letter:uppercase">{{ fecha }}</p>
+  <h1 class="mt-1 text-3xl font-extrabold tracking-tight text-neutral-900">
+    {{ saludo }}, {{ auth.sesion()?.nombre ?? 'bienvenido' }}
+  </h1>
+  <p class="mt-2 text-sm font-medium text-neutral-500">
+    Sistema de Gestión de Asistencia Vial · Comisión Militar y Policial
+  </p>
+
+  <h2 class="mt-10 text-xs font-bold tracking-wider text-neutral-500 uppercase">Módulos</h2>
+
+  @if (modulos().length > 0) {
+    <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      @for (modulo of modulos(); track modulo.path) {
+        <a
+          [routerLink]="modulo.path"
+          class="group flex flex-col rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md"
+        >
+          <span
+            class="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-600 transition-colors group-hover:bg-primary-500 group-hover:text-white"
+          >
+            <app-icon [name]="modulo.icon" class="h-5 w-5" />
+          </span>
+          <span class="mt-4 text-base font-bold text-neutral-900">{{ modulo.label }}</span>
+          <span class="mt-1 text-sm text-neutral-500">{{ modulo.descripcion }}</span>
+          <span class="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-primary-600">
+            Abrir
+            <app-icon
+              name="flecha"
+              class="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+            />
+          </span>
+        </a>
+      }
+    </div>
+  } @else {
+    <div
+      class="mt-4 flex items-start gap-4 rounded-2xl border border-warning-200 bg-warning-50 p-5"
+    >
+      <span
+        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning-100 text-warning-800"
+      >
+        <app-icon name="candado" class="h-5 w-5" />
+      </span>
+      <div>
+        <p class="text-sm font-bold text-warning-900">Su usuario no tiene módulos asignados</p>
+        <p class="mt-1 text-sm text-warning-900">
+          Solicite a un administrador los permisos que necesita para operar en el front desk.
+        </p>
+      </div>
+    </div>
+  }
 </div>

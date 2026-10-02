@@ -1,0 +1,42 @@
+import { Component, computed, input } from '@angular/core';
+
+/** Trazos 24x24 (stroke), mismo estilo que los íconos inline del login. */
+const ICONOS = {
+  inicio: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-9.5Z',
+  eventos:
+    'M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z',
+  agentes:
+    'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2m22 0v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z',
+  unidades:
+    'M1 3h15v13H1V3Zm15 5h4l3 3v5h-7V8Zm-10.5 13a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm13 0a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z',
+  salir: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14 5-5-5-5m5 5H9',
+  flecha: 'M5 12h14m-6-6 6 6-6 6',
+  candado:
+    'M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2Zm10-10V7a4 4 0 1 0-8 0v4h8Z',
+} as const;
+
+export type IconName = keyof typeof ICONOS;
+
+@Component({
+  selector: 'app-icon',
+  standalone: true,
+  template: `
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+      class="h-full w-full"
+    >
+      <path [attr.d]="path()" />
+    </svg>
+  `,
+  host: { class: 'inline-block shrink-0' },
+})
+export class Icon {
+  readonly name = input.required<IconName>();
+  protected readonly path = computed(() => ICONOS[this.name()]);
+}
