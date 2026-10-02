@@ -1,3 +1,82 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import 'tailwindcss';
+
+/**
+ * Paleta institucional COMIPOL (Comisión Militar y Policial), tomada del escudo oficial
+ * (public/brand/comipol-crest.png): azul institucional, verde del águila/corona y la franja
+ * naranja del MOPC. Misma escala 50-900 que Mobile/src/constants/colors.ts, para que ambas
+ * apps se vean como el mismo producto.
+ */
+@theme {
+  --color-primary-50: #ebf1f7;
+  --color-primary-100: #d5e2ee;
+  --color-primary-200: #aac5dd;
+  --color-primary-300: #7da6cb;
+  --color-primary-400: #4680b5;
+  --color-primary-500: #05539b;
+  --color-primary-600: #044785;
+  --color-primary-700: #043c70;
+  --color-primary-800: #03305a;
+  --color-primary-900: #022544;
+
+  --color-secondary-50: #ebf3ef;
+  --color-secondary-100: #d4e6dd;
+  --color-secondary-200: #a8ccbc;
+  --color-secondary-300: #7ab298;
+  --color-secondary-400: #42916c;
+  --color-secondary-500: #006a39;
+  --color-secondary-600: #005b31;
+  --color-secondary-700: #004c29;
+  --color-secondary-800: #003d21;
+  --color-secondary-900: #002f19;
+
+  --color-accent-50: #fef4eb;
+  --color-accent-100: #fce9d4;
+  --color-accent-200: #fad2a8;
+  --color-accent-300: #f7ba7a;
+  --color-accent-400: #f39d42;
+  --color-accent-500: #ef7b00;
+  --color-accent-600: #ce6a00;
+  --color-accent-700: #ac5900;
+  --color-accent-800: #8b4700;
+  --color-accent-900: #693600;
+
+  --color-neutral-50: #f2f3f4;
+  --color-neutral-100: #e3e5e7;
+  --color-neutral-200: #c7cacf;
+  --color-neutral-300: #aaaeb6;
+  --color-neutral-400: #868c97;
+  --color-neutral-500: #5b6472;
+  --color-neutral-600: #4e5662;
+  --color-neutral-700: #424852;
+  --color-neutral-800: #353a42;
+  --color-neutral-900: #282c32;
+
+  --color-danger-50: #fceeee;
+  --color-danger-100: #f8dada;
+  --color-danger-200: #f1b6b6;
+  --color-danger-300: #ea8f8f;
+  --color-danger-400: #e16060;
+  --color-danger-500: #d62828;
+  --color-danger-600: #b82222;
+  --color-danger-700: #9a1d1d;
+  --color-danger-800: #7c1717;
+  --color-danger-900: #5e1212;
+
+  --color-warning-50: #fef8eb;
+  --color-warning-100: #fdf0d4;
+  --color-warning-200: #fbe2a8;
+  --color-warning-300: #f8d27a;
+  --color-warning-400: #f5bf42;
+  --color-warning-500: #f2a900;
+  --color-warning-600: #d09100;
+  --color-warning-700: #ae7a00;
+  --color-warning-800: #8c6200;
+  --color-warning-900: #6a4a00;
+}
+
+body {
+  background-color: var(--color-neutral-50);
+  color: var(--color-neutral-900);
+}

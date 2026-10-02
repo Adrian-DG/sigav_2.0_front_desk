@@ -1,0 +1,7 @@
+<div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-neutral-50 px-6 text-center">
+  <h1 class="text-2xl font-extrabold text-neutral-900">Hola, {{ auth.sesion()?.nombre ?? 'agente' }}</h1>
+  <p class="text-sm font-medium text-neutral-500">El home del front desk todavía no está implementado.</p>
+  <div class="w-40">
+    <app-button variant="ghost" (click)="auth.logout()">Cerrar sesión</app-button>
+  </div>
+</div>

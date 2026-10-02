@@ -1,0 +1,22 @@
+<div class="flex flex-col gap-1.5">
+  <label [for]="id" class="text-sm font-semibold text-neutral-600">{{ label() }}</label>
+  <div
+    class="flex items-center gap-2 rounded-xl border bg-neutral-50 px-3.5 transition-colors focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100"
+    [class.border-neutral-200]="!errorText()"
+    [class.border-danger-500]="!!errorText()">
+    <ng-content select="[leading]" />
+    <input
+      [id]="id"
+      [type]="type()"
+      [placeholder]="placeholder()"
+      [autocomplete]="autocomplete()"
+      [disabled]="disabled()"
+      [ngModel]="value()"
+      (ngModelChange)="value.set($event)"
+      class="min-h-11 flex-1 bg-transparent text-base text-neutral-900 placeholder:text-neutral-400 focus:outline-none disabled:cursor-not-allowed" />
+    <ng-content select="[trailing]" />
+  </div>
+  @if (errorText()) {
+    <span class="text-xs font-medium text-danger-600">{{ errorText() }}</span>
+  }
+</div>
