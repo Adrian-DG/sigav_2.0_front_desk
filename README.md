@@ -1,10 +1,33 @@
-# SigavFrontDesk
+# SiGAV Front Desk
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.1.
 
 ## Development server
 
-To start a local development server, run:
+La app apunta al backend (`Backend/`, ver su propio README) según uno de tres ambientes, cada uno
+con su `src/environments/environment.*.ts` (swapped en build con `fileReplacements`, ver `angular.json`):
+
+```bash
+yarn start:local   # http://localhost:5282/api — backend corriendo en esta misma PC
+yarn start:tunnel   # Dev Tunnel de Visual Studio — backend expuesto para probar desde otra red
+yarn start:prod     # API de producción (una vez desplegada)
+```
+
+- **local**: usa `src/environments/environment.ts`, ya en el repo con `http://localhost:5282/api`. Requiere la API corriendo en local (`dotnet run` en `Backend/Presentation`).
+- **dev-tunnel**: usa `src/environments/environment.dev-tunnel.ts`. Ese archivo está gitignorado (la URL del túnel es de cada PC y cambia); créelo con:
+  ```ts
+  export const environment = {
+    production: false,
+    apiUrl: 'https://<su-dev-tunnel>.devtunnels.ms/api',
+  };
+  ```
+  Es el mismo Dev Tunnel que usa `Mobile/.env.local` (`EXPO_PUBLIC_API_URL_DEV_TUNNEL`): si ya lo tiene corriendo para el móvil, reutilice esa URL.
+- **production**: usa `src/environments/environment.production.ts` (en el repo, con `apiUrl` vacío hasta que exista un despliegue).
+
+En cualquier caso, la API debe permitir el origen `http://localhost:4200` en `Cors:AllowedOrigins`
+(`Backend/Presentation/appsettings.Development.json`); ya está agregado para desarrollo.
+
+También puede usar el comando estándar de Angular directamente (apunta a `environment.ts`, igual que `start:local`):
 
 ```bash
 ng serve
