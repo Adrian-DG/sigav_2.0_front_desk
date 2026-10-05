@@ -1,0 +1,119 @@
+<app-dialogo
+  [abierto]="!!agente()"
+  ancho="amplio"
+  titulo="Editar agente"
+  [descripcion]="agente() ? agente()!.nombreCompleto + ' · ' + agente()!.identificacion : ''"
+  (cerrar)="cancelar()"
+>
+  <form class="flex flex-col gap-6" novalidate (submit)="$event.preventDefault(); guardar()">
+    <fieldset class="grid gap-4 sm:grid-cols-2" [disabled]="guardando()">
+      <legend class="mb-3 text-xs font-bold tracking-wider text-neutral-500 uppercase">Datos personales</legend>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Cédula</span>
+        <input class="control" autocomplete="off" [class.border-danger-500]="error('identificacion')" [value]="valor('identificacion')" (input)="cambiar('identificacion', $any($event.target).value)" />
+        @if (error('identificacion'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Sexo</span>
+        <select class="control" (change)="cambiar('sexo', $any($event.target).value)">
+          <option value="0" [selected]="valor('sexo') === '0'">Sin especificar</option>
+          <option value="1" [selected]="valor('sexo') === '1'">Masculino</option>
+          <option value="2" [selected]="valor('sexo') === '2'">Femenino</option>
+        </select>
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Nombre</span>
+        <input class="control" autocomplete="off" [class.border-danger-500]="error('nombre')" [value]="valor('nombre')" (input)="cambiar('nombre', $any($event.target).value)" />
+        @if (error('nombre'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Apellido</span>
+        <input class="control" autocomplete="off" [class.border-danger-500]="error('apellido')" [value]="valor('apellido')" (input)="cambiar('apellido', $any($event.target).value)" />
+        @if (error('apellido'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+    </fieldset>
+
+    <fieldset class="grid gap-4 sm:grid-cols-2" [disabled]="guardando()">
+      <legend class="mb-3 text-xs font-bold tracking-wider text-neutral-500 uppercase">Institución y función</legend>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Institución</span>
+        <select class="control" [class.border-danger-500]="error('institucion')" (change)="cambiar('institucion', $any($event.target).value)">
+          @for (i of instituciones; track i.valor) {
+            <option [value]="i.valor" [selected]="valor('institucion') === i.valor">{{ i.label }}</option>
+          }
+        </select>
+        @if (error('institucion'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Rango</span>
+        <select
+          class="control"
+          [class.border-danger-500]="error('rangoId')"
+          [disabled]="!rangos.hasValue()"
+          (change)="cambiar('rangoId', $any($event.target).value)"
+        >
+          @if (!rangos.hasValue()) {
+            <option value="">{{ rangos.error() ? 'No se pudieron cargar los rangos' : 'Cargando…' }}</option>
+          } @else {
+            @for (r of rangos.value(); track r.id) {
+              <option [value]="r.id" [selected]="valor('rangoId') === '' + r.id">{{ rangoLabel(r) }}</option>
+            }
+          }
+        </select>
+        @if (error('rangoId'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Área operativa</span>
+        <select class="control" [class.border-danger-500]="error('areaOperativa')" (change)="cambiar('areaOperativa', $any($event.target).value)">
+          @for (a of areas; track a.valor) {
+            <option [value]="a.valor" [selected]="valor('areaOperativa') === a.valor">{{ a.label }}</option>
+          }
+        </select>
+        @if (error('areaOperativa'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Especialidad <span class="font-normal text-neutral-400">(opcional)</span></span>
+        <input
+          class="control"
+          placeholder="Paramédico, Operador de grúa…"
+          autocomplete="off"
+          [attr.maxlength]="especialidadMax"
+          [class.border-danger-500]="error('especialidad')"
+          [value]="valor('especialidad')"
+          (input)="cambiar('especialidad', $any($event.target).value)"
+        />
+        @if (error('especialidad'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+      <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-neutral-200 px-4 py-3 sm:col-span-2">
+        <input type="checkbox" class="mt-0.5 h-4 w-4 accent-primary-500" [checked]="form().accesoTotal" (change)="cambiar('accesoTotal', $any($event.target).checked)" />
+        <span>
+          <span class="block text-sm font-bold text-neutral-900">Acceso total en la app</span>
+          <span class="block text-sm text-neutral-500">Puede usar todos los formularios, sin importar su área operativa.</span>
+        </span>
+      </label>
+    </fieldset>
+
+    @if (errorGeneral()) {
+      <p class="rounded-xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700" role="alert">{{ errorGeneral() }}</p>
+    }
+  </form>
+
+  <app-button dialogoAcciones variant="ghost" [bloque]="false" [disabled]="guardando()" (click)="cancelar()">Cancelar</app-button>
+  <app-button dialogoAcciones [bloque]="false" [loading]="guardando()" (click)="guardar()">Guardar cambios</app-button>
+</app-dialogo>

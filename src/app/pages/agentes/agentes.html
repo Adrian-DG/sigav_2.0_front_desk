@@ -15,7 +15,7 @@
       <select class="control w-full" (change)="autorizacion.set($any($event.target).value)">
         <option value="todos" [selected]="autorizacion() === 'todos'">Todos</option>
         <option value="autorizados" [selected]="autorizacion() === 'autorizados'">Autorizados</option>
-        <option value="pendientes" [selected]="autorizacion() === 'pendientes'">Pendientes</option>
+        <option value="pendientes" [selected]="autorizacion() === 'pendientes'">Sin autorizar</option>
       </select>
     </app-filtro>
     <app-filtro etiqueta="Área operativa" class="w-52">
@@ -46,6 +46,38 @@
     }
   </div>
 
+  @if (totalPendientes() > 0 && autorizacion() !== 'pendientes') {
+    <button
+      type="button"
+      class="mb-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 text-left text-sm text-warning-900 hover:bg-warning-100"
+      (click)="verPendientes()"
+    >
+      <span>
+        <strong>{{ totalPendientes() }} {{ totalPendientes() === 1 ? 'agente espera' : 'agentes esperan' }} autorización</strong>
+        para usar la app (registrados desde la app o sin acceso).
+      </span>
+      <span class="font-bold whitespace-nowrap">Ver →</span>
+    </button>
+  }
+
+  @if (aviso(); as a) {
+    <div
+      class="mb-4 flex items-start justify-between gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold"
+      [class]="a.error ? 'border-danger-200 bg-danger-50 text-danger-800' : 'border-secondary-200 bg-secondary-50 text-secondary-800'"
+      [attr.role]="a.error ? 'alert' : 'status'"
+    >
+      <span>{{ a.texto }}</span>
+      <span class="flex shrink-0 items-center gap-3">
+        @if (a.deshacer) {
+          <button type="button" class="font-bold underline" (click)="a.deshacer()">Deshacer</button>
+        }
+        <button type="button" aria-label="Cerrar aviso" (click)="aviso.set(null)">
+          <app-icon name="limpiar" class="h-4 w-4" />
+        </button>
+      </span>
+    </div>
+  }
+
   <div class="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
     <app-estado-lista
       [cargando]="agentes.isLoading()"
@@ -64,8 +96,9 @@
                 <th>Cédula</th>
                 <th>Institución</th>
                 <th>Área operativa</th>
-                <th>Acceso</th>
+                <th>Acceso a la app</th>
                 <th>Registrado</th>
+                <th><span class="sr-only">Acciones</span></th>
               </tr>
             </thead>
             <tbody>
@@ -83,21 +116,51 @@
                       <p class="text-xs text-neutral-500">{{ agente.especialidad }}</p>
                     }
                   </td>
-                  <td>
-                    <div class="flex flex-wrap gap-1">
-                      @if (!agente.isActive) {
-                        <app-badge tono="neutral">Inactivo</app-badge>
-                      } @else if (agente.autorizado) {
-                        <app-badge tono="secondary">Autorizado</app-badge>
-                      } @else {
-                        <app-badge tono="warning">Pendiente</app-badge>
-                      }
-                      @if (agente.accesoTotal) {
-                        <app-badge tono="accent">Acceso total</app-badge>
-                      }
-                    </div>
+                  <td class="min-w-44">
+                    @if (!agente.isActive) {
+                      <app-badge tono="neutral">Inactivo</app-badge>
+                    } @else {
+                      <!-- Interruptor: autoriza o quita el acceso de inmediato -->
+                      <button
+                        type="button"
+                        role="switch"
+                        class="group inline-flex items-center gap-2 disabled:cursor-wait disabled:opacity-60"
+                        [attr.aria-checked]="agente.autorizado"
+                        [attr.aria-label]="(agente.autorizado ? 'Quitar el acceso a ' : 'Autorizar a ') + agente.nombreCompleto"
+                        [disabled]="cambiando().has(agente.id)"
+                        (click)="alternarAutorizacion(agente)"
+                      >
+                        <span
+                          class="relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors"
+                          [class]="agente.autorizado ? 'bg-secondary-500' : 'bg-neutral-300'"
+                        >
+                          <span
+                            class="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform"
+                            [class.translate-x-5]="agente.autorizado"
+                          ></span>
+                        </span>
+                        <span class="text-sm font-semibold" [class]="agente.autorizado ? 'text-secondary-700' : 'text-warning-800'">
+                          {{ agente.autorizado ? 'Autorizado' : 'Sin autorizar' }}
+                        </span>
+                      </button>
+                    }
+                    @if (agente.accesoTotal) {
+                      <div class="mt-1"><app-badge tono="accent">Acceso total</app-badge></div>
+                    }
                   </td>
                   <td class="whitespace-nowrap">{{ fecha(agente.createdAt) }}</td>
+                  <td class="text-right">
+                    @if (agente.isActive) {
+                      <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold whitespace-nowrap text-primary-600 hover:bg-primary-50"
+                        [attr.aria-label]="'Editar a ' + agente.nombreCompleto"
+                        (click)="aviso.set(null); editando.set(agente)"
+                      >
+                        <app-icon name="editar" class="h-4 w-4" /> Editar
+                      </button>
+                    }
+                  </td>
                 </tr>
               }
             </tbody>
@@ -108,3 +171,5 @@
     </app-estado-lista>
   </div>
 </app-module-page>
+
+<app-editar-agente [agente]="editando()" (cerrar)="editando.set(null)" (guardado)="guardado($event)" />
