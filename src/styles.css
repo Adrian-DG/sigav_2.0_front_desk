@@ -92,9 +92,10 @@ body {
     appearance: none;
   }
 
-  /* Listados de los módulos (cuerpo de app-module-page) */
+  /* Listados de los módulos (cuerpo de app-module-page). relative: los .sr-only de las celdas
+     (posición absoluta) quedan dentro del contenedor con scroll y no ensanchan la página. */
   .tabla {
-    @apply w-full border-collapse text-left text-sm;
+    @apply relative w-full border-collapse text-left text-sm;
   }
   .tabla th {
     @apply border-b border-neutral-100 bg-neutral-50 px-4 py-3 text-xs font-bold tracking-wider whitespace-nowrap text-neutral-500 uppercase;

@@ -1,6 +1,6 @@
 <app-module-page
   titulo="Eventos"
-  descripcion="Asistencias y accidentes reportados por las unidades, del más reciente al más antiguo."
+  descripcion="Asistencias y accidentes reportados por los agentes desde la app, del más reciente al más antiguo."
   icono="eventos"
 >
   <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="eventos.isLoading()" (click)="eventos.reload()">
@@ -8,7 +8,38 @@
   </app-button>
 
   <div moduloFiltros class="contents">
-    <app-filtro etiqueta="Estado" class="w-44">
+    <app-filtro etiqueta="Ciudadano" class="w-full sm:w-72">
+      <app-busqueda placeholder="Cédula, nombre, teléfono o placa" [(valor)]="ciudadano" />
+    </app-filtro>
+    <app-filtro etiqueta="Agente" class="w-full sm:w-64">
+      <app-selector
+        [opciones]="opciones().agentes"
+        [placeholder]="filtros.isLoading() ? 'Cargando…' : 'Todos'"
+        [(valor)]="agenteId"
+      />
+    </app-filtro>
+    <app-filtro etiqueta="Unidad" class="w-full sm:w-44">
+      <app-selector
+        [opciones]="opciones().unidades"
+        [placeholder]="filtros.isLoading() ? 'Cargando…' : 'Todas'"
+        [(valor)]="unidadId"
+      />
+    </app-filtro>
+    <app-filtro etiqueta="Denominación" class="w-full sm:w-64">
+      <app-selector
+        [opciones]="opciones().denominaciones"
+        [placeholder]="filtros.isLoading() ? 'Cargando…' : 'Todas'"
+        [(valor)]="denominacionId"
+      />
+    </app-filtro>
+    <app-filtro etiqueta="Tramo" class="w-full sm:w-64">
+      <app-selector
+        [opciones]="opciones().tramos"
+        [placeholder]="filtros.isLoading() ? 'Cargando…' : 'Todos'"
+        [(valor)]="tramoId"
+      />
+    </app-filtro>
+    <app-filtro etiqueta="Estado" class="w-full sm:w-40">
       <select class="control w-full" (change)="cambiarEstado($any($event.target).value)">
         <option value="" [selected]="estado() === null">Todos</option>
         @for (e of estados; track e.valor) {
@@ -43,6 +74,12 @@
         Limpiar filtros
       </button>
     }
+    @if (filtros.error()) {
+      <p class="w-full text-xs font-semibold text-danger-700" role="alert">
+        No se pudieron cargar las opciones de los filtros.
+        <button type="button" class="font-bold underline" (click)="filtros.reload()">Reintentar</button>
+      </p>
+    }
   </div>
 
   <div class="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
@@ -55,6 +92,9 @@
       (reintentar)="eventos.reload()"
     >
       @if (resultado(); as r) {
+        <p class="border-b border-neutral-100 px-4 py-2 text-xs font-semibold text-neutral-500">
+          {{ r.totalCount }} {{ r.totalCount === 1 ? 'evento' : 'eventos' }}
+        </p>
         <div class="overflow-x-auto">
           <table class="tabla">
             <thead>
@@ -65,12 +105,13 @@
                 <th>Tipo</th>
                 <th>Involucrado</th>
                 <th>Ubicación</th>
-                <th>Unidad</th>
+                <th>Unidad y agente</th>
+                <th><span class="sr-only">Acciones</span></th>
               </tr>
             </thead>
             <tbody>
               @for (evento of r.items; track evento.id) {
-                <tr>
+                <tr class="cursor-pointer" (click)="detalleId.set(evento.id)">
                   <td class="font-bold whitespace-nowrap text-neutral-900">{{ evento.id }}</td>
                   <td class="whitespace-nowrap">{{ fechaHora(evento.fechaHoraReporte) }}</td>
                   <td>
@@ -90,10 +131,28 @@
                       <p class="text-xs text-neutral-500">{{ evento.vehiculoDescripcion }}</p>
                     }
                   </td>
-                  <td class="min-w-48">{{ evento.direccion || 'Sin dirección' }}</td>
-                  <td class="min-w-40">
+                  <td class="min-w-48">
+                    {{ evento.direccion || 'Sin dirección' }}
+                    @if (evento.tramo) {
+                      <p class="text-xs text-neutral-500">{{ evento.tramo }}</p>
+                    }
+                  </td>
+                  <td class="min-w-48">
                     <p class="font-bold text-neutral-900">{{ evento.unidadFicha || '—' }}</p>
                     <p class="text-xs text-neutral-500">{{ evento.unidadDenominacion }}</p>
+                    @if (evento.agente) {
+                      <p class="text-xs text-neutral-500">{{ evento.agente }}</p>
+                    }
+                  </td>
+                  <td class="text-right">
+                    <button
+                      type="button"
+                      class="rounded-lg px-3 py-1.5 text-sm font-bold whitespace-nowrap text-primary-600 hover:bg-primary-50"
+                      [attr.aria-label]="'Ver el evento ' + evento.id"
+                      (click)="$event.stopPropagation(); detalleId.set(evento.id)"
+                    >
+                      Ver
+                    </button>
                   </td>
                 </tr>
               }
@@ -105,3 +164,5 @@
     </app-estado-lista>
   </div>
 </app-module-page>
+
+<app-evento-detalle [eventoId]="detalleId()" (cerrar)="detalleId.set(null)" />

@@ -31,4 +31,101 @@ export type EventoListItem = {
   fechaHoraReporte: string;
   unidadFicha: string;
   unidadDenominacion: string;
+  /** Agente de la unidad principal (rango, nombre y apellido). */
+  agente: string | null;
+  tramo: string | null;
+};
+
+/** Opción de un filtro (Application/Features/Operaciones/Eventos/GetFiltrosEventos.cs). */
+export type OpcionFiltro = { id: number; nombre: string; detalle: string | null };
+
+/** GET /eventos/filtros */
+export type FiltrosEventos = {
+  agentes: OpcionFiltro[];
+  unidades: OpcionFiltro[];
+  denominaciones: OpcionFiltro[];
+  tramos: OpcionFiltro[];
+};
+
+/** Domain/Enums CanalReporteEnum. */
+export const CANAL_REPORTE: Record<number, string> = {
+  1: 'Call center',
+  2: 'Agente en campo (app)',
+  3: 'Agencia 911',
+  4: 'WhatsApp',
+  5: 'Call center *511',
+};
+
+/** Domain/Enums RolUnidadEventoEnum. */
+export const ROL_UNIDAD: Record<number, string> = { 1: 'Principal', 2: 'Apoyo', 3: 'Apoyo solicitado' };
+
+/** Domain/Enums RolCiudadanoEnum. */
+export const ROL_CIUDADANO: Record<number, string> = {
+  1: 'Conductor',
+  2: 'Pasajero',
+  3: 'Peatón',
+  4: 'Paciente',
+  5: 'Otro',
+};
+
+/** Domain/Enums SexoEnum. */
+export const SEXO: Record<number, string> = { 0: '—', 1: 'Masculino', 2: 'Femenino' };
+
+/** Domain/Enums TipoEvidenciaEnum. */
+export const TIPO_EVIDENCIA: Record<number, string> = { 1: 'Foto', 2: 'Firma del ciudadano', 3: 'Firma del agente' };
+
+/** Mirrors EventoViewModels.cs EventoDetalleViewModel (GET /eventos/{id}). */
+export type EventoDetalle = {
+  id: number;
+  requestId: string | null;
+  estado: EstadoEvento;
+  canalReporte: number;
+  tipoCierreId: number | null;
+  tipoCierre: string | null;
+  isActive: boolean;
+  latitud: number;
+  longitud: number;
+  direccion: string | null;
+  municipioId: number;
+  municipio: string;
+  provincia: string;
+  tramoId: number | null;
+  tramo: string | null;
+  comentario: string | null;
+  fechaHoraReporte: string;
+  fechaHoraLlegada: string | null;
+  fechaHoraCompletado: string | null;
+  tipos: { id: number; nombre: string; categoria: CategoriaEvento }[];
+  unidades: {
+    unidadId: number;
+    ficha: string;
+    denominacionId: number;
+    denominacion: string;
+    nivelDenominacion: string;
+    rol: number;
+    agenteId: number;
+    agente: string;
+  }[];
+  vehiculos: {
+    id: number;
+    placa: string | null;
+    tipoVehiculo: string | null;
+    marca: string | null;
+    modelo: string | null;
+    color: string | null;
+    descripcion: string;
+  }[];
+  ciudadanos: {
+    id: number;
+    rol: number;
+    identificacion: string | null;
+    nombre: string | null;
+    apellido: string | null;
+    sexo: number;
+    telefono: string | null;
+    nacionalidad: string | null;
+    vehiculoId: number | null;
+  }[];
+  evidencias: { id: number; tipo: number; ubicacion: string; contentType: string; registrada: string }[];
+  createdAt: string;
 };

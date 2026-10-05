@@ -1,0 +1,157 @@
+<app-dialogo
+  [abierto]="eventoId() !== null"
+  [titulo]="'Evento #' + (eventoId() ?? '')"
+  [descripcion]="detalle() ? fechaHora(detalle()!.fechaHoraReporte) + ' · ' + CANAL[detalle()!.canalReporte] : ''"
+  ancho="amplio"
+  (cerrar)="cerrar.emit()"
+>
+  @if (error()) {
+    <div class="flex flex-col items-center gap-3 py-6 text-center">
+      <p class="text-sm font-semibold text-danger-700" role="alert">{{ error() }}</p>
+      <app-button variant="ghost" [bloque]="false" (click)="evento.reload()">Reintentar</app-button>
+    </div>
+  } @else if (!detalle()) {
+    <p class="py-10 text-center text-sm text-neutral-500">Cargando evento…</p>
+  } @else {
+    @let e = detalle()!;
+    <div class="flex flex-col gap-6">
+      <!-- Resumen -->
+      <div class="flex flex-wrap items-center gap-2">
+        <app-badge [tono]="ESTADO[e.estado].tono">{{ ESTADO[e.estado].label }}</app-badge>
+        @if (!e.isActive) {
+          <app-badge tono="danger">Anulado</app-badge>
+        }
+        @for (t of e.tipos; track t.id) {
+          <app-badge [tono]="CATEGORIA[t.categoria].tono">{{ t.nombre }}</app-badge>
+        }
+      </div>
+
+      <section>
+        <h3 class="mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">Ubicación y tiempos</h3>
+        <dl class="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+          <div>
+            <dt class="text-neutral-500">Lugar</dt>
+            <dd class="font-semibold text-neutral-900">
+              {{ e.direccion || 'Sin dirección' }}
+              <span class="block font-normal text-neutral-600">{{ e.municipio }}, {{ e.provincia }}</span>
+              <a
+                class="text-xs font-bold text-primary-600 hover:underline"
+                [href]="mapa(e)"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Ver en el mapa ({{ e.latitud }}, {{ e.longitud }})
+              </a>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-neutral-500">Tramo</dt>
+            <dd class="font-semibold text-neutral-900">{{ e.tramo ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-neutral-500">Reportado</dt>
+            <dd class="font-semibold text-neutral-900">{{ fechaHora(e.fechaHoraReporte) }}</dd>
+          </div>
+          <div>
+            <dt class="text-neutral-500">Llegada de la unidad</dt>
+            <dd class="font-semibold text-neutral-900">{{ e.fechaHoraLlegada ? fechaHora(e.fechaHoraLlegada) : '—' }}</dd>
+          </div>
+          <div>
+            <dt class="text-neutral-500">Completado</dt>
+            <dd class="font-semibold text-neutral-900">
+              {{ e.fechaHoraCompletado ? fechaHora(e.fechaHoraCompletado) : '—' }}
+              @if (e.tipoCierre) {
+                <span class="block font-normal text-neutral-600">Cierre: {{ e.tipoCierre }}</span>
+              }
+            </dd>
+          </div>
+          <div>
+            <dt class="text-neutral-500">Registrado en el sistema</dt>
+            <dd class="font-semibold text-neutral-900">{{ fechaHora(e.createdAt) }}</dd>
+          </div>
+        </dl>
+        @if (e.comentario) {
+          <p class="mt-3 rounded-xl bg-neutral-50 px-4 py-3 text-sm whitespace-pre-line text-neutral-700">{{ e.comentario }}</p>
+        }
+      </section>
+
+      <section>
+        <h3 class="mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">Unidades</h3>
+        <ul class="flex flex-col gap-2">
+          @for (u of e.unidades; track u.unidadId) {
+            <li class="rounded-xl border border-neutral-100 px-4 py-3 text-sm">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-bold text-neutral-900">{{ u.ficha }}</span>
+                <app-badge [tono]="u.rol === 1 ? 'primary' : 'neutral'">{{ ROL_UNIDAD[u.rol] }}</app-badge>
+              </div>
+              <p class="text-neutral-600">{{ u.denominacion }} · {{ u.nivelDenominacion }}</p>
+              <p class="text-neutral-600">Agente: {{ u.agente || '—' }}</p>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section>
+        <h3 class="mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">Ciudadanos</h3>
+        @if (e.ciudadanos.length) {
+          <div class="overflow-x-auto rounded-xl border border-neutral-100">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Persona</th>
+                  <th>Rol</th>
+                  <th>Contacto</th>
+                  <th>Vehículo</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of e.ciudadanos; track c.id) {
+                  <tr>
+                    <td class="min-w-44">
+                      <p class="font-semibold text-neutral-900">{{ nombre(c) }}</p>
+                      <p class="font-mono text-xs text-neutral-500">{{ c.identificacion ?? 'Sin identificación' }}</p>
+                    </td>
+                    <td class="whitespace-nowrap">
+                      {{ ROL_CIUDADANO[c.rol] }}
+                      <p class="text-xs text-neutral-500">{{ SEXO[c.sexo] }}{{ c.nacionalidad ? ' · ' + c.nacionalidad : '' }}</p>
+                    </td>
+                    <td class="whitespace-nowrap">{{ c.telefono ?? '—' }}</td>
+                    <td class="min-w-40">{{ vehiculo(e, c.vehiculoId) ?? '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="text-sm text-neutral-500">No se registraron ciudadanos.</p>
+        }
+      </section>
+
+      <section>
+        <h3 class="mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">Vehículos</h3>
+        @if (e.vehiculos.length) {
+          <ul class="flex flex-col gap-1 text-sm">
+            @for (v of e.vehiculos; track v.id) {
+              <li class="text-neutral-900">{{ describir(v) }}</li>
+            }
+          </ul>
+        } @else {
+          <p class="text-sm text-neutral-500">No se registraron vehículos.</p>
+        }
+      </section>
+
+      @if (e.evidencias.length) {
+        <section>
+          <h3 class="mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">Evidencias</h3>
+          <ul class="flex flex-col gap-1 text-sm text-neutral-700">
+            @for (ev of e.evidencias; track ev.id) {
+              <li>{{ TIPO_EVIDENCIA[ev.tipo] ?? 'Evidencia' }} · {{ fechaHora(ev.registrada) }}</li>
+            }
+          </ul>
+        </section>
+      }
+    </div>
+  }
+
+  <app-button dialogoAcciones variant="ghost" [bloque]="false" (click)="cerrar.emit()">Cerrar</app-button>
+</app-dialogo>
