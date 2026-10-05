@@ -30,7 +30,13 @@ describe('itemsVisibles', () => {
   });
 
   it('muestra cada módulo según su permiso', () => {
-    expect(itemsVisibles([Permisos.Eventos, Permisos.Usuarios]).map((i) => i.path)).toEqual(['/', '/eventos', '/usuarios']);
+    // El mapa de calor usa el mismo permiso que Eventos
+    expect(itemsVisibles([Permisos.Eventos, Permisos.Usuarios]).map((i) => i.path)).toEqual([
+      '/',
+      '/eventos',
+      '/mapa',
+      '/usuarios',
+    ]);
   });
 });
 

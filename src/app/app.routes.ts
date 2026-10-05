@@ -34,6 +34,12 @@ export const routes: Routes = [
         canActivate: [permissionGuard(Permisos.Eventos)],
       },
       {
+        path: 'mapa',
+        title: 'Mapa de calor · SiGAV',
+        loadComponent: () => import('./pages/mapa/mapa').then((m) => m.Mapa),
+        canActivate: [permissionGuard(Permisos.Eventos)],
+      },
+      {
         path: 'agentes',
         title: 'Agentes · SiGAV',
         loadComponent: () => import('./pages/agentes/agentes').then((m) => m.Agentes),

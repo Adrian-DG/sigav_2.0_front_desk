@@ -20,6 +20,7 @@ const ICONOS = {
   limpiar: 'M18 6 6 18M6 6l12 12',
   usuarios: 'M12 3 4 6v6c0 5 3.4 8.3 8 9 4.6-.7 8-4 8-9V6l-8-3Zm-3 9 2 2 4-4',
   editar: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z',
+  mapa: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14',
 } as const;
 
 export type IconName = keyof typeof ICONOS;

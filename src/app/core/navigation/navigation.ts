@@ -21,6 +21,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permiso: Permisos.Eventos,
   },
   {
+    label: 'Mapa de calor',
+    path: '/mapa',
+    icon: 'mapa',
+    descripcion: 'Accidentes y asistencias en el mapa del país',
+    permiso: Permisos.Eventos,
+  },
+  {
     label: 'Agentes',
     path: '/agentes',
     icon: 'agentes',

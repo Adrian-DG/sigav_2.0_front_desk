@@ -1,0 +1,128 @@
+<app-module-page
+  titulo="Mapa de calor"
+  descripcion="Dónde ocurren los accidentes y las asistencias en el país."
+  icono="mapa"
+>
+  <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="mapaEventos.isLoading()" (click)="mapaEventos.reload()">
+    <app-icon name="actualizar" class="h-4 w-4" /> Actualizar
+  </app-button>
+
+  <div moduloFiltros class="contents">
+    <app-filtro etiqueta="Período">
+      <div class="inline-flex min-h-10 flex-wrap rounded-xl bg-neutral-100 p-1" role="radiogroup" aria-label="Período">
+        @for (p of periodos; track p.valor) {
+          <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="periodo() === p.valor"
+            class="rounded-lg px-3 text-sm font-bold transition-colors"
+            [class]="periodo() === p.valor ? 'bg-white text-primary-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'"
+            (click)="elegirPeriodo(p.valor)"
+          >
+            {{ p.label }}
+          </button>
+        }
+      </div>
+    </app-filtro>
+    @if (periodo() === 'personalizado') {
+      <app-filtro etiqueta="Desde">
+        <input
+          type="date"
+          class="control"
+          [value]="desdePersonalizado()"
+          [max]="hastaPersonalizado() || hoy()"
+          (change)="desdePersonalizado.set($any($event.target).value)"
+        />
+      </app-filtro>
+      <app-filtro etiqueta="Hasta">
+        <input
+          type="date"
+          class="control"
+          [value]="hastaPersonalizado()"
+          [min]="desdePersonalizado() || null"
+          [max]="hoy()"
+          (change)="hastaPersonalizado.set($any($event.target).value)"
+        />
+      </app-filtro>
+    }
+    <div class="flex flex-col gap-1.5">
+      <span class="text-xs font-bold tracking-wide text-neutral-500 uppercase">Mostrar</span>
+      <div class="flex min-h-10 flex-wrap items-center gap-4 text-sm font-semibold text-neutral-700">
+        <label class="inline-flex cursor-pointer items-center gap-2">
+          <input type="checkbox" class="h-4 w-4 accent-danger-500" [checked]="verAccidentes()" (change)="verAccidentes.set($any($event.target).checked)" />
+          Accidentes
+        </label>
+        <label class="inline-flex cursor-pointer items-center gap-2">
+          <input type="checkbox" class="h-4 w-4 accent-primary-500" [checked]="verAsistencias()" (change)="verAsistencias.set($any($event.target).checked)" />
+          Asistencias
+        </label>
+        <label class="inline-flex cursor-pointer items-center gap-2">
+          <input type="checkbox" class="h-4 w-4 accent-neutral-600" [checked]="verPuntos()" (change)="verPuntos.set($any($event.target).checked)" />
+          Cada evento como punto
+        </label>
+      </div>
+    </div>
+  </div>
+
+  @if (errorRango(); as e) {
+    <p class="mb-4 rounded-xl bg-warning-50 px-4 py-3 text-sm font-semibold text-warning-900" role="alert">{{ e }}</p>
+  } @else if (error()) {
+    <p class="mb-4 rounded-xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700" role="alert">
+      {{ error() }}
+      <button type="button" class="ml-2 font-bold underline" (click)="mapaEventos.reload()">Reintentar</button>
+    </p>
+  }
+
+  <!-- Resumen del período -->
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+    <p class="text-neutral-600">
+      @if (datos(); as d) {
+        <strong class="text-neutral-900">{{ conteo().total }}</strong> eventos del
+        {{ fechaCorta(d.desde) }}{{ d.desde !== d.hasta ? ' al ' + fechaCorta(d.hasta) : '' }}:
+        <strong class="text-danger-600">{{ conteo().accidentes }}</strong> con accidentes y
+        <strong class="text-primary-600">{{ conteo().asistencias }}</strong> con asistencias.
+        @if (d.truncado) {
+          <span class="font-semibold text-warning-800">Se muestran los {{ d.puntos.length }} más recientes de {{ d.total }}.</span>
+        }
+      } @else if (mapaEventos.isLoading()) {
+        Cargando eventos…
+      }
+    </p>
+    <div class="flex gap-2">
+      <button type="button" class="rounded-lg px-3 py-1.5 text-sm font-bold text-primary-600 hover:bg-primary-50" (click)="ajustarAEventos()">
+        Encuadrar los eventos
+      </button>
+      <button type="button" class="rounded-lg px-3 py-1.5 text-sm font-bold text-primary-600 hover:bg-primary-50" (click)="verTodoElPais()">
+        Todo el país
+      </button>
+    </div>
+  </div>
+
+  <div class="relative overflow-hidden rounded-2xl border border-neutral-100 bg-neutral-100 shadow-sm">
+    <div #mapa class="h-[70vh] min-h-96 w-full" role="region" aria-label="Mapa de calor de los eventos"></div>
+
+    @if (cargandoMapa()) {
+      <div class="absolute inset-0 z-[500] flex items-center justify-center bg-neutral-100 text-sm text-neutral-500">Cargando mapa…</div>
+    } @else if (errorMapa()) {
+      <div class="absolute inset-0 z-[500] flex items-center justify-center bg-neutral-100 text-sm font-semibold text-danger-700">{{ errorMapa() }}</div>
+    }
+
+    <!-- Leyenda -->
+    <div class="absolute bottom-4 left-4 z-[500] flex flex-col gap-2 rounded-xl bg-white/95 px-4 py-3 text-xs shadow-md">
+      <span class="font-bold text-neutral-700">Concentración de eventos</span>
+      @if (verAccidentes()) {
+        <div class="flex items-center gap-2">
+          <span class="w-20 text-neutral-600">Accidentes</span>
+          <span class="h-2.5 w-28 rounded-full" [style.background]="gradienteCss.accidente"></span>
+        </div>
+      }
+      @if (verAsistencias()) {
+        <div class="flex items-center gap-2">
+          <span class="w-20 text-neutral-600">Asistencias</span>
+          <span class="h-2.5 w-28 rounded-full" [style.background]="gradienteCss.asistencia"></span>
+        </div>
+      }
+      <div class="flex justify-between pl-22 text-neutral-400"><span>Pocos</span><span>Muchos</span></div>
+    </div>
+  </div>
+</app-module-page>
