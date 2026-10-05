@@ -1,0 +1,48 @@
+<app-dialogo
+  [abierto]="!!origen()"
+  ancho="amplio"
+  [titulo]="'Historial · ' + (origen()?.nombre ?? '')"
+  [descripcion]="
+    origen()?.tipo === 'unidad'
+      ? 'Altas y cambios de denominación de esta unidad, del más reciente al más antiguo.'
+      : 'Unidades que han tenido esta denominación y cuándo la recibieron o perdieron.'
+  "
+  (cerrar)="cerrar.emit()"
+>
+  @if (error()) {
+    <div class="flex flex-col items-center gap-3 py-6 text-center">
+      <p class="text-sm font-semibold text-danger-700" role="alert">{{ error() }}</p>
+      <app-button variant="ghost" [bloque]="false" (click)="historial.reload()">Reintentar</app-button>
+    </div>
+  } @else if (!historial.hasValue()) {
+    <p class="py-10 text-center text-sm text-neutral-500">Cargando historial…</p>
+  } @else if (!historial.value().items.length) {
+    <p class="py-10 text-center text-sm text-neutral-500">Todavía no hay cambios registrados.</p>
+  } @else {
+    <ol class="flex flex-col" [class.opacity-60]="historial.isLoading()">
+      @for (c of historial.value().items; track c.id) {
+        <li class="flex gap-4 border-b border-neutral-100 py-3 last:border-b-0">
+          <div class="w-28 shrink-0 text-xs text-neutral-500">{{ fechaHora(c.fechaUtc) }}</div>
+          <div class="flex min-w-0 flex-col gap-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <app-badge [tono]="TIPO[c.tipoCambio]?.tono ?? 'neutral'">{{ TIPO[c.tipoCambio]?.label ?? 'Cambio' }}</app-badge>
+              <span class="text-xs text-neutral-500">por {{ c.usuario ?? 'usuario ' + c.usuarioId }}</span>
+            </div>
+            <p class="text-sm text-neutral-900">{{ describir(c) }}</p>
+            @if (c.observacion) {
+              <p class="text-sm text-neutral-600 italic">«{{ c.observacion }}»</p>
+            }
+          </div>
+        </li>
+      }
+    </ol>
+    <app-paginador
+      [pagina]="pagina()"
+      [tamano]="tamano"
+      [total]="historial.value().totalCount"
+      (paginaChange)="pagina.set($event)"
+    />
+  }
+
+  <app-button dialogoAcciones variant="ghost" [bloque]="false" (click)="cerrar.emit()">Cerrar</app-button>
+</app-dialogo>

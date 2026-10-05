@@ -1,0 +1,187 @@
+<app-dialogo
+  [abierto]="!!inicio()"
+  ancho="amplio"
+  titulo="Asignar denominación"
+  descripcion="Elija la unidad y la denominación; cualquiera de las dos puede crearse aquí mismo."
+  (cerrar)="cancelar()"
+>
+  <form id="form-asignar-denominacion" class="flex flex-col gap-6" novalidate (submit)="$event.preventDefault(); guardar()">
+    <div class="grid gap-6 sm:grid-cols-2">
+      <!-- Unidad -->
+      <fieldset class="flex flex-col gap-3" [disabled]="guardando()">
+        <legend class="mb-3 text-xs font-bold tracking-wider text-neutral-500 uppercase">Unidad</legend>
+        <ng-container *ngTemplateOutlet="modos; context: { $implicit: 'modoUnidad', valor: form().modoUnidad, nueva: 'Nueva ficha' }" />
+
+        @if (form().modoUnidad === 'existente') {
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-semibold text-neutral-600">Ficha</span>
+            <app-selector
+              [opciones]="opcionesUnidad()"
+              [placeholder]="opciones() ? 'Buscar ficha…' : 'Cargando…'"
+              [deshabilitado]="guardando()"
+              [valor]="form().unidadId"
+              (valorChange)="cambiar('unidadId', $event)"
+            />
+            @if (error('unidad', 'unidad', 'unidadid'); as e) {
+              <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+            }
+          </label>
+        } @else {
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-semibold text-neutral-600">Ficha</span>
+            <input
+              class="control uppercase"
+              placeholder="CA-1759"
+              autocomplete="off"
+              [class.border-danger-500]="error('ficha', 'nuevaunidad.ficha')"
+              [value]="form().ficha"
+              (input)="cambiar('ficha', $any($event.target).value)"
+            />
+            @if (error('ficha', 'nuevaunidad.ficha'); as e) {
+              <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+            }
+          </label>
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-semibold text-neutral-600">Placa <span class="font-normal text-neutral-400">(opcional)</span></span>
+            <input
+              class="control uppercase"
+              placeholder="EL01759"
+              autocomplete="off"
+              [class.border-danger-500]="error('placa', 'nuevaunidad.placa')"
+              [value]="form().placa"
+              (input)="cambiar('placa', $any($event.target).value)"
+            />
+            @if (error('placa', 'nuevaunidad.placa'); as e) {
+              <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+            }
+          </label>
+        }
+      </fieldset>
+
+      <!-- Denominación -->
+      <fieldset class="flex flex-col gap-3" [disabled]="guardando()">
+        <legend class="mb-3 text-xs font-bold tracking-wider text-neutral-500 uppercase">Denominación</legend>
+        <ng-container *ngTemplateOutlet="modos; context: { $implicit: 'modoDenominacion', valor: form().modoDenominacion, nueva: 'Nueva denominación' }" />
+
+        @if (form().modoDenominacion === 'existente') {
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-semibold text-neutral-600">Denominación</span>
+            <app-selector
+              [opciones]="opcionesDenominacion()"
+              [placeholder]="opciones() ? 'Buscar denominación…' : 'Cargando…'"
+              [deshabilitado]="guardando()"
+              [valor]="form().denominacionId"
+              (valorChange)="cambiar('denominacionId', $event)"
+            />
+            @if (error('denominacion', 'denominacion', 'denominacionid'); as e) {
+              <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+            }
+          </label>
+        } @else {
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-semibold text-neutral-600">Nombre</span>
+            <input
+              class="control"
+              placeholder="Samaná Móvil I"
+              autocomplete="off"
+              [class.border-danger-500]="error('nombre', 'nuevadenominacion.nombre')"
+              [value]="form().nombre"
+              (input)="cambiar('nombre', $any($event.target).value)"
+            />
+            @if (error('nombre', 'nuevadenominacion.nombre'); as e) {
+              <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+            }
+          </label>
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-semibold text-neutral-600">Tramo</span>
+            <app-selector
+              [opciones]="opcionesTramo()"
+              placeholder="Buscar tramo…"
+              [deshabilitado]="guardando()"
+              [valor]="form().tramoId"
+              (valorChange)="cambiar('tramoId', $event)"
+            />
+            @if (error('tramo', 'nuevadenominacion.tramoid'); as e) {
+              <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+            }
+          </label>
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-semibold text-neutral-600">Nivel</span>
+            <select
+              class="control"
+              [class.border-danger-500]="error('nivel', 'nuevadenominacion.niveldenominacionid')"
+              (change)="cambiar('nivelId', $any($event.target).value)"
+            >
+              <option value="" [selected]="!form().nivelId">Seleccione…</option>
+              @for (n of opciones()?.niveles ?? []; track n.id) {
+                <option [value]="n.id" [selected]="form().nivelId === '' + n.id">{{ n.nombre }}</option>
+              }
+            </select>
+            @if (error('nivel', 'nuevadenominacion.niveldenominacionid'); as e) {
+              <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+            }
+          </label>
+        }
+      </fieldset>
+    </div>
+
+    <!-- Lo que pasará al confirmar -->
+    @if (efectos().desplazada || efectos().anterior || efectos().yaLaTiene) {
+      <div class="flex flex-col gap-1 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-900" role="status">
+        @if (efectos().yaLaTiene) {
+          <p>La unidad ya tiene esta denominación: solo se volverá a marcar como disponible.</p>
+        }
+        @if (efectos().desplazada; as ficha) {
+          <p>
+            <strong>{{ ficha }}</strong> usa esta denominación ahora. Al confirmar, {{ ficha }} quedará
+            <strong>sin denominación</strong> y <strong>No disponible</strong>.
+          </p>
+        }
+        @if (efectos().anterior; as anterior) {
+          <p>La unidad dejará la denominación <strong>{{ anterior }}</strong>, que quedará libre.</p>
+        }
+      </div>
+    }
+
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-semibold text-neutral-600">Motivo <span class="font-normal text-neutral-400">(opcional, queda en el historial)</span></span>
+      <textarea
+        class="control min-h-20 py-2"
+        [attr.maxlength]="motivoMax"
+        [disabled]="guardando()"
+        [value]="form().motivo"
+        (input)="cambiar('motivo', $any($event.target).value)"
+      ></textarea>
+      @if (error('motivo', 'motivo'); as e) {
+        <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+      }
+    </label>
+
+    @if (errorGeneral()) {
+      <p class="rounded-xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700" role="alert">{{ errorGeneral() }}</p>
+    }
+  </form>
+
+  <app-button dialogoAcciones variant="ghost" [bloque]="false" [disabled]="guardando()" (click)="cancelar()">Cancelar</app-button>
+  <app-button dialogoAcciones [bloque]="false" [loading]="guardando()" (click)="guardar()">
+    {{ efectos().desplazada ? 'Asignar y liberar ' + efectos().desplazada : 'Asignar' }}
+  </app-button>
+</app-dialogo>
+
+<!-- Existente / Nueva -->
+<ng-template #modos let-campo let-valor="valor" let-nueva="nueva">
+  <div class="inline-flex self-start rounded-xl bg-neutral-100 p-1" role="radiogroup">
+    @for (m of [{ v: 'existente', l: 'Existente' }, { v: 'nueva', l: nueva }]; track m.v) {
+      <button
+        type="button"
+        role="radio"
+        [attr.aria-checked]="valor === m.v"
+        class="rounded-lg px-3 py-1.5 text-sm font-bold transition-colors"
+        [class]="valor === m.v ? 'bg-white text-primary-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'"
+        (click)="cambiar(campo, m.v)"
+      >
+        {{ m.l }}
+      </button>
+    }
+  </div>
+</ng-template>

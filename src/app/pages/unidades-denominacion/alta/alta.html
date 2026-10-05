@@ -1,0 +1,98 @@
+<app-dialogo
+  [abierto]="!!tipo()"
+  [titulo]="tipo() === 'unidad' ? 'Nueva unidad' : 'Nueva denominación'"
+  [descripcion]="
+    tipo() === 'unidad'
+      ? 'La unidad queda sin denominación (No disponible) hasta que se le asigne una.'
+      : 'La denominación queda libre para asignarla después a una unidad.'
+  "
+  (cerrar)="cancelar()"
+>
+  <form class="flex flex-col gap-4" novalidate (submit)="$event.preventDefault(); guardar()">
+    <fieldset class="flex flex-col gap-4" [disabled]="guardando()">
+      @if (tipo() === 'unidad') {
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-neutral-600">Ficha</span>
+          <input
+            class="control uppercase"
+            placeholder="CA-1759"
+            autocomplete="off"
+            [class.border-danger-500]="error('ficha')"
+            [value]="ficha()"
+            (input)="ficha.set($any($event.target).value); limpiarErroresApi()"
+          />
+          @if (error('ficha'); as e) {
+            <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+          }
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-neutral-600">Placa <span class="font-normal text-neutral-400">(opcional)</span></span>
+          <input
+            class="control uppercase"
+            placeholder="EL01759"
+            autocomplete="off"
+            [class.border-danger-500]="error('placa')"
+            [value]="placa()"
+            (input)="placa.set($any($event.target).value); limpiarErroresApi()"
+          />
+          @if (error('placa'); as e) {
+            <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+          }
+        </label>
+      } @else {
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-neutral-600">Nombre</span>
+          <input
+            class="control"
+            placeholder="Samaná Móvil I"
+            autocomplete="off"
+            [class.border-danger-500]="error('nombre')"
+            [value]="nombre()"
+            (input)="nombre.set($any($event.target).value); limpiarErroresApi()"
+          />
+          @if (error('nombre'); as e) {
+            <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+          }
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-neutral-600">Tramo</span>
+          <app-selector
+            [opciones]="opcionesTramo()"
+            [placeholder]="opciones() ? 'Buscar tramo…' : 'Cargando…'"
+            [deshabilitado]="guardando()"
+            [valor]="tramoId()"
+            (valorChange)="tramoId.set($event); limpiarErroresApi()"
+          />
+          @if (error('tramoId'); as e) {
+            <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+          }
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-neutral-600">Nivel</span>
+          <select
+            class="control"
+            [class.border-danger-500]="error('nivelDenominacionId')"
+            (change)="nivelId.set($any($event.target).value); limpiarErroresApi()"
+          >
+            <option value="" [selected]="!nivelId()">Seleccione…</option>
+            @for (n of opciones()?.niveles ?? []; track n.id) {
+              <option [value]="n.id" [selected]="nivelId() === '' + n.id">{{ n.nombre }}</option>
+            }
+          </select>
+          @if (error('nivelDenominacionId'); as e) {
+            <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+          }
+        </label>
+      }
+    </fieldset>
+
+    @if (errorGeneral()) {
+      <p class="rounded-xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700" role="alert">{{ errorGeneral() }}</p>
+    }
+  </form>
+
+  <app-button dialogoAcciones variant="ghost" [bloque]="false" [disabled]="guardando()" (click)="cancelar()">Cancelar</app-button>
+  <app-button dialogoAcciones [bloque]="false" [loading]="guardando()" (click)="guardar()">
+    {{ tipo() === 'unidad' ? 'Crear unidad' : 'Crear denominación' }}
+  </app-button>
+</app-dialogo>

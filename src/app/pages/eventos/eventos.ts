@@ -1,5 +1,6 @@
 import { httpResource } from '@angular/common/http';
-import { Component, computed, linkedSignal, signal } from '@angular/core';
+import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
 import { environment } from '../../../environments/environment';
 import type { PagedResult } from '../../core/models/paged-result';
@@ -28,6 +29,8 @@ const TAMANO_PAGINA = 20;
  * Asistencias y accidentes reportados por las unidades (GET /eventos), más recientes primero.
  * Filtros por estado, fechas, agente, unidad, denominación, tramo y datos del ciudadano; las
  * opciones de los selectores vienen de GET /eventos/filtros. Un clic en la fila abre el detalle.
+ * Los filtros iniciales pueden llegar en la URL (desde, hasta, agenteId, unidadId, denominacionId,
+ * tramoId): así abre, por ejemplo, el panel de estadísticas del inicio.
  */
 @Component({
   selector: 'app-eventos',
@@ -55,13 +58,15 @@ export class Eventos {
   protected readonly fechaHora = fechaHora;
   protected readonly tamano = TAMANO_PAGINA;
 
+  private readonly url = inject(ActivatedRoute).snapshot.queryParamMap;
+
   protected readonly estado = signal<EstadoEvento | null>(null);
-  protected readonly desde = signal('');
-  protected readonly hasta = signal('');
-  protected readonly agenteId = signal<number | null>(null);
-  protected readonly unidadId = signal<number | null>(null);
-  protected readonly denominacionId = signal<number | null>(null);
-  protected readonly tramoId = signal<number | null>(null);
+  protected readonly desde = signal(fechaDeUrl(this.url.get('desde')));
+  protected readonly hasta = signal(fechaDeUrl(this.url.get('hasta')));
+  protected readonly agenteId = signal(idDeUrl(this.url.get('agenteId')));
+  protected readonly unidadId = signal(idDeUrl(this.url.get('unidadId')));
+  protected readonly denominacionId = signal(idDeUrl(this.url.get('denominacionId')));
+  protected readonly tramoId = signal(idDeUrl(this.url.get('tramoId')));
   protected readonly ciudadano = signal('');
 
   // Vuelve a la primera página cada vez que cambia un filtro
@@ -133,4 +138,15 @@ export class Eventos {
     this.tramoId.set(null);
     this.ciudadano.set('');
   }
+}
+
+/** Id positivo de un query param, o null si falta o no es válido. */
+function idDeUrl(valor: string | null): number | null {
+  const id = Number(valor);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+/** Fecha yyyy-MM-dd de un query param, o vacío si falta o no tiene ese formato. */
+function fechaDeUrl(valor: string | null): string {
+  return valor && /^\d{4}-\d{2}-\d{2}$/.test(valor) ? valor : '';
 }

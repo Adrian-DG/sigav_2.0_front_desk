@@ -31,4 +31,44 @@ export type Denominacion = {
   jerarquia: number;
   tramoId: number;
   tramo: string;
+  /** Unidad activa que la usa ahora; null: libre. */
+  unidadId: number | null;
+  unidadFicha: string | null;
 };
+
+/** GET /unidades/opciones-asignacion (Unidades/GetOpcionesAsignacion.cs): solo activos. */
+export type OpcionesAsignacion = {
+  unidades: { id: number; ficha: string; placa: string | null; denominacionId: number | null; denominacion: string | null; estaDisponible: boolean }[];
+  denominaciones: {
+    id: number;
+    nombre: string;
+    nivelDenominacion: string;
+    jerarquia: number;
+    tramo: string;
+    unidadId: number | null;
+    unidadFicha: string | null;
+  }[];
+  tramos: { id: number; nombre: string }[];
+  niveles: { id: number; nombre: string; jerarquia: number }[];
+};
+
+/** POST /unidades/asignar-denominacion (Unidades/AsignarDenominacion.cs AsignacionDenominacionResult). */
+export type AsignacionResultado = {
+  unidadId: number;
+  ficha: string;
+  denominacionId: number;
+  denominacion: string;
+  denominacionAnterior: string | null;
+  unidadesLiberadas: { id: number; ficha: string }[];
+};
+
+/** Mismas reglas que Domain Unidad.FichaRegex / Unidad.PlacaRegex (se envían en mayúsculas). */
+export const FICHA_VALIDA = /^[A-Z]{1,2}-\d{3,4}$/;
+export const PLACA_VALIDA = /^[A-Z]{1,2}\d{5,6}$/;
+export const MENSAJE_FICHA = 'Formato: 1 o 2 letras, guion y 3 o 4 números (ej.: CA-1759).';
+export const MENSAJE_PLACA = 'Formato: 1 o 2 letras y 5 o 6 números (ej.: EL00101).';
+
+/** { "NuevaUnidad.Ficha": ["..."] } de la API → { "nuevaunidad.ficha": "..." } (primer mensaje, clave en minúsculas). */
+export function erroresPorClave(errors: Record<string, string[]> | null | undefined): Record<string, string> {
+  return Object.fromEntries(Object.entries(errors ?? {}).map(([clave, mensajes]) => [clave.toLowerCase(), mensajes[0]]));
+}
