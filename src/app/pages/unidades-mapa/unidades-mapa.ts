@@ -22,7 +22,18 @@ import { Dialogo, DialogoAcciones } from '../../shared/components/dialogo/dialog
 import { Filtro } from '../../shared/components/filtro/filtro';
 import { Icon } from '../../shared/components/icon/icon';
 import { ModulePage, ModuloAcciones, ModuloFiltros } from '../../shared/components/module-page/module-page';
-import { ESTADOS, EstadoPosicion, hace, normalizar, type PosicionUnidad, type PosicionesUnidades } from './unidades-mapa.model';
+import {
+  ESTADOS,
+  EstadoPosicion,
+  TIPOS,
+  hace,
+  normalizar,
+  tipoDeUnidad,
+  type PosicionUnidad,
+  type PosicionesUnidades,
+} from './unidades-mapa.model';
+
+const SVG = 'http://www.w3.org/2000/svg';
 
 /** República Dominicana: vista inicial y la del botón "Todo el país". */
 const LIMITES_RD: Leaflet.LatLngBoundsExpression = [
@@ -51,6 +62,9 @@ export class UnidadesMapa {
   private readonly http = inject(HttpClient);
 
   protected readonly ESTADOS = ESTADOS;
+  protected readonly TIPOS = TIPOS;
+  protected readonly tipoDeUnidad = tipoDeUnidad;
+  protected readonly tipos = Object.keys(TIPOS) as (keyof typeof TIPOS)[];
   protected readonly Estado = EstadoPosicion;
   protected readonly fechaHora = fechaHora;
   protected readonly redondear = Math.round;
@@ -290,7 +304,10 @@ export class UnidadesMapa {
     }
   }
 
-  /** Círculo del color del estado, flecha con el rumbo (si se está moviendo) y la ficha debajo. */
+  /**
+   * Ícono del tipo de unidad (unidad, grúa o taller) en un círculo del color del estado, flecha con
+   * el rumbo (si se está moviendo) y la ficha debajo.
+   */
   private icono(u: PosicionUnidad, seleccionada: boolean): HTMLElement {
     const color = ESTADOS[u.estado].color;
     const raiz = document.createElement('div');
@@ -298,30 +315,50 @@ export class UnidadesMapa {
 
     const enMovimiento = u.estado === EstadoPosicion.EnLinea && u.rumbo !== null && (u.velocidadKmh ?? 0) >= 3;
     if (enMovimiento) {
-      const flecha = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      const flecha = document.createElementNS(SVG, 'svg');
       flecha.setAttribute('viewBox', '0 0 24 24');
-      flecha.setAttribute('class', 'absolute h-9 w-9');
+      flecha.setAttribute('class', 'absolute h-[52px] w-[52px]');
       flecha.style.transform = `translate(-50%, -50%) rotate(${u.rumbo}deg)`;
-      const punta = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      punta.setAttribute('d', 'M12 1 16 7H8Z');
+      const punta = document.createElementNS(SVG, 'path');
+      punta.setAttribute('d', 'M12 0.5 15.5 5.5H8.5Z');
       punta.setAttribute('fill', color);
       flecha.appendChild(punta);
       raiz.appendChild(flecha);
     }
 
-    const punto = document.createElement('div');
-    punto.className = 'absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white shadow-md';
-    punto.style.background = color;
-    if (seleccionada) punto.style.boxShadow = `0 0 0 4px ${color}55`;
-    raiz.appendChild(punto);
+    const circulo = document.createElement('div');
+    circulo.className =
+      'absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white shadow-md';
+    circulo.style.background = color;
+    if (seleccionada) circulo.style.boxShadow = `0 0 0 4px ${color}55`;
+    circulo.appendChild(this.svgTipo(tipoDeUnidad(u.nivel)));
+    raiz.appendChild(circulo);
 
     const etiqueta = document.createElement('span');
     etiqueta.className =
-      'absolute top-3 -translate-x-1/2 rounded-md bg-white/95 px-1.5 py-px text-[11px] font-extrabold whitespace-nowrap shadow';
+      'absolute top-[18px] -translate-x-1/2 rounded-md bg-white/95 px-1.5 py-px text-[11px] font-extrabold whitespace-nowrap shadow';
     etiqueta.style.color = color;
     etiqueta.textContent = u.ficha;
     raiz.appendChild(etiqueta);
     return raiz;
+  }
+
+  private svgTipo(tipo: keyof typeof TIPOS): SVGSVGElement {
+    const svg = document.createElementNS(SVG, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('class', 'h-[18px] w-[18px]');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', '#ffffff');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    for (const d of TIPOS[tipo].trazos) {
+      const trazo = document.createElementNS(SVG, 'path');
+      trazo.setAttribute('d', d);
+      svg.appendChild(trazo);
+    }
+    return svg;
   }
 
   /** Contenido del popup (como nodos DOM, sin HTML interpolado). */
@@ -334,7 +371,7 @@ export class UnidadesMapa {
       el.className = `!m-0 ${clase}`;
       div.appendChild(el);
     };
-    linea(`Unidad ${u.ficha}${u.placa ? ` · ${u.placa}` : ''}`, 'font-extrabold');
+    linea(`${u.nivel ?? TIPOS[tipoDeUnidad(u.nivel)].label} ${u.ficha}${u.placa ? ` · ${u.placa}` : ''}`, 'font-extrabold');
     linea(u.denominacion ? `${u.denominacion}${u.tramo ? ` · ${u.tramo}` : ''}` : 'Sin denominación', 'text-neutral-600');
     linea(`${u.rango ? `${u.rango} ` : ''}${u.agente}`, 'mt-1');
     const estado = `${ESTADOS[u.estado].label} · ${hace(Date.parse(u.fechaHoraRecibidaUtc), this.ahora())}`;
