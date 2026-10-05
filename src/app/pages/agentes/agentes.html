@@ -1,0 +1,110 @@
+<app-module-page
+  titulo="Agentes"
+  descripcion="Personal operativo que usa la app móvil y su autorización de acceso."
+  icono="agentes"
+>
+  <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="agentes.isLoading()" (click)="agentes.reload()">
+    <app-icon name="actualizar" class="h-4 w-4" /> Actualizar
+  </app-button>
+
+  <div moduloFiltros class="contents">
+    <app-filtro etiqueta="Buscar" class="w-full sm:w-72">
+      <app-busqueda placeholder="Cédula, nombre o apellido" [(valor)]="busqueda" />
+    </app-filtro>
+    <app-filtro etiqueta="Autorización" class="w-40">
+      <select class="control w-full" (change)="autorizacion.set($any($event.target).value)">
+        <option value="todos" [selected]="autorizacion() === 'todos'">Todos</option>
+        <option value="autorizados" [selected]="autorizacion() === 'autorizados'">Autorizados</option>
+        <option value="pendientes" [selected]="autorizacion() === 'pendientes'">Pendientes</option>
+      </select>
+    </app-filtro>
+    <app-filtro etiqueta="Área operativa" class="w-52">
+      <select class="control w-full" (change)="cambiarArea($any($event.target).value)">
+        <option value="" [selected]="area() === null">Todas</option>
+        @for (a of areas; track a.valor) {
+          <option [value]="a.valor" [selected]="area() === a.valor">{{ a.label }}</option>
+        }
+      </select>
+    </app-filtro>
+    <label class="flex min-h-10 items-center gap-2 text-sm font-semibold text-neutral-600">
+      <input
+        type="checkbox"
+        class="h-4 w-4 rounded accent-primary-500"
+        [checked]="incluirInactivos()"
+        (change)="incluirInactivos.set($any($event.target).checked)"
+      />
+      Incluir inactivos
+    </label>
+    @if (hayFiltros()) {
+      <button
+        type="button"
+        class="min-h-10 rounded-xl px-3 text-sm font-bold text-primary-600 hover:bg-primary-50"
+        (click)="limpiarFiltros()"
+      >
+        Limpiar filtros
+      </button>
+    }
+  </div>
+
+  <div class="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
+    <app-estado-lista
+      [cargando]="agentes.isLoading()"
+      [error]="error()"
+      [hayDatos]="!!resultado()?.items?.length"
+      tituloVacio="No hay agentes"
+      [textoVacio]="hayFiltros() ? 'Ningún agente coincide con los filtros aplicados.' : 'Aún no hay agentes registrados.'"
+      (reintentar)="agentes.reload()"
+    >
+      @if (resultado(); as r) {
+        <div class="overflow-x-auto">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Agente</th>
+                <th>Cédula</th>
+                <th>Institución</th>
+                <th>Área operativa</th>
+                <th>Acceso</th>
+                <th>Registrado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (agente of r.items; track agente.id) {
+                <tr [class.opacity-60]="!agente.isActive">
+                  <td class="min-w-56">
+                    <p class="font-bold text-neutral-900">{{ agente.nombreCompleto }}</p>
+                    <p class="text-xs text-neutral-500">{{ agente.rango }}</p>
+                  </td>
+                  <td class="font-mono whitespace-nowrap">{{ agente.identificacion }}</td>
+                  <td>{{ INSTITUCION[agente.institucion] ?? '—' }}</td>
+                  <td class="min-w-40">
+                    {{ AREA[agente.areaOperativa] ?? '—' }}
+                    @if (agente.especialidad) {
+                      <p class="text-xs text-neutral-500">{{ agente.especialidad }}</p>
+                    }
+                  </td>
+                  <td>
+                    <div class="flex flex-wrap gap-1">
+                      @if (!agente.isActive) {
+                        <app-badge tono="neutral">Inactivo</app-badge>
+                      } @else if (agente.autorizado) {
+                        <app-badge tono="secondary">Autorizado</app-badge>
+                      } @else {
+                        <app-badge tono="warning">Pendiente</app-badge>
+                      }
+                      @if (agente.accesoTotal) {
+                        <app-badge tono="accent">Acceso total</app-badge>
+                      }
+                    </div>
+                  </td>
+                  <td class="whitespace-nowrap">{{ fecha(agente.createdAt) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-paginador [pagina]="pagina()" [tamano]="tamano" [total]="r.totalCount" (paginaChange)="pagina.set($event)" />
+      }
+    </app-estado-lista>
+  </div>
+</app-module-page>

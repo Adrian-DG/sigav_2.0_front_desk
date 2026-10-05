@@ -1,7 +1,7 @@
 <button
   [type]="type()"
   [disabled]="disabled() || loading()"
-  [class]="'flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-base font-bold transition-colors disabled:cursor-not-allowed ' + classes">
+  [class]="'flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-base font-bold transition-colors disabled:cursor-not-allowed ' + classes">
   @if (loading()) {
     <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />

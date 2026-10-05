@@ -1,0 +1,107 @@
+<app-module-page
+  titulo="Eventos"
+  descripcion="Asistencias y accidentes reportados por las unidades, del más reciente al más antiguo."
+  icono="eventos"
+>
+  <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="eventos.isLoading()" (click)="eventos.reload()">
+    <app-icon name="actualizar" class="h-4 w-4" /> Actualizar
+  </app-button>
+
+  <div moduloFiltros class="contents">
+    <app-filtro etiqueta="Estado" class="w-44">
+      <select class="control w-full" (change)="cambiarEstado($any($event.target).value)">
+        <option value="" [selected]="estado() === null">Todos</option>
+        @for (e of estados; track e.valor) {
+          <option [value]="e.valor" [selected]="estado() === e.valor">{{ e.label }}</option>
+        }
+      </select>
+    </app-filtro>
+    <app-filtro etiqueta="Desde">
+      <input
+        type="date"
+        class="control"
+        [value]="desde()"
+        [max]="hasta() || null"
+        (change)="desde.set($any($event.target).value)"
+      />
+    </app-filtro>
+    <app-filtro etiqueta="Hasta">
+      <input
+        type="date"
+        class="control"
+        [value]="hasta()"
+        [min]="desde() || null"
+        (change)="hasta.set($any($event.target).value)"
+      />
+    </app-filtro>
+    @if (hayFiltros()) {
+      <button
+        type="button"
+        class="min-h-10 rounded-xl px-3 text-sm font-bold text-primary-600 hover:bg-primary-50"
+        (click)="limpiarFiltros()"
+      >
+        Limpiar filtros
+      </button>
+    }
+  </div>
+
+  <div class="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
+    <app-estado-lista
+      [cargando]="eventos.isLoading()"
+      [error]="error()"
+      [hayDatos]="!!resultado()?.items?.length"
+      tituloVacio="No hay eventos"
+      [textoVacio]="hayFiltros() ? 'Ningún evento coincide con los filtros aplicados.' : 'Aún no se han reportado eventos.'"
+      (reintentar)="eventos.reload()"
+    >
+      @if (resultado(); as r) {
+        <div class="overflow-x-auto">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Reportado</th>
+                <th>Estado</th>
+                <th>Tipo</th>
+                <th>Involucrado</th>
+                <th>Ubicación</th>
+                <th>Unidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (evento of r.items; track evento.id) {
+                <tr>
+                  <td class="font-bold whitespace-nowrap text-neutral-900">{{ evento.id }}</td>
+                  <td class="whitespace-nowrap">{{ fechaHora(evento.fechaHoraReporte) }}</td>
+                  <td>
+                    <app-badge [tono]="ESTADO[evento.estado].tono">{{ ESTADO[evento.estado].label }}</app-badge>
+                  </td>
+                  <td class="min-w-48">
+                    <div class="flex flex-wrap gap-1">
+                      @for (c of evento.categorias; track c) {
+                        <app-badge [tono]="CATEGORIA[c].tono">{{ CATEGORIA[c].label }}</app-badge>
+                      }
+                    </div>
+                    <p class="mt-1 text-neutral-900">{{ evento.tipos.join(', ') }}</p>
+                  </td>
+                  <td class="min-w-44">
+                    <p class="text-neutral-900">{{ evento.ciudadanoPrincipal ?? '—' }}</p>
+                    @if (evento.vehiculoDescripcion) {
+                      <p class="text-xs text-neutral-500">{{ evento.vehiculoDescripcion }}</p>
+                    }
+                  </td>
+                  <td class="min-w-48">{{ evento.direccion || 'Sin dirección' }}</td>
+                  <td class="min-w-40">
+                    <p class="font-bold text-neutral-900">{{ evento.unidadFicha || '—' }}</p>
+                    <p class="text-xs text-neutral-500">{{ evento.unidadDenominacion }}</p>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-paginador [pagina]="pagina()" [tamano]="tamano" [total]="r.totalCount" (paginaChange)="pagina.set($event)" />
+      }
+    </app-estado-lista>
+  </div>
+</app-module-page>

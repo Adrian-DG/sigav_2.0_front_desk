@@ -19,8 +19,10 @@ export class Button {
   readonly type = input<'button' | 'submit'>('button');
   readonly loading = input(false);
   readonly disabled = input(false);
+  /** true: ocupa todo el ancho (formularios); false: se ajusta a su contenido (acciones de un encabezado). */
+  readonly bloque = input(true);
 
   get classes(): string {
-    return VARIANT_CLASSES[this.variant()];
+    return `${VARIANT_CLASSES[this.variant()]} ${this.bloque() ? 'w-full' : 'w-auto'}`;
   }
 }

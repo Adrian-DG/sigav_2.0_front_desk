@@ -13,6 +13,13 @@ const ICONOS = {
   flecha: 'M5 12h14m-6-6 6 6-6 6',
   candado:
     'M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2Zm10-10V7a4 4 0 1 0-8 0v4h8Z',
+  buscar: 'm21 21-4.3-4.3M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z',
+  actualizar: 'M21 12a9 9 0 0 1-15.5 6.2M3 12A9 9 0 0 1 18.5 5.8M21 4v5h-5M3 20v-5h5',
+  anterior: 'm15 18-6-6 6-6',
+  siguiente: 'm9 18 6-6-6-6',
+  limpiar: 'M18 6 6 18M6 6l12 12',
+  usuarios: 'M12 3 4 6v6c0 5 3.4 8.3 8 9 4.6-.7 8-4 8-9V6l-8-3Zm-3 9 2 2 4-4',
+  editar: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z',
 } as const;
 
 export type IconName = keyof typeof ICONOS;

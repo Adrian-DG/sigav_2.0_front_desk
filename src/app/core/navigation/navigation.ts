@@ -34,6 +34,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     descripcion: 'Unidades, fichas y denominaciones por tramo',
     permiso: Permisos.UnidadesDenominacion,
   },
+  {
+    label: 'Usuarios',
+    path: '/usuarios',
+    icon: 'usuarios',
+    descripcion: 'Usuarios del front desk y sus permisos',
+    permiso: Permisos.Usuarios,
+  },
 ];
 
 export const itemsVisibles = (permisos: readonly string[]) =>

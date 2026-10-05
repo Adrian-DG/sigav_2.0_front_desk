@@ -1,0 +1,169 @@
+<app-dialogo
+  [abierto]="abierto()"
+  ancho="amplio"
+  titulo="Nuevo usuario"
+  descripcion="Usuario del front desk: datos personales, acceso y permisos iniciales."
+  (cerrar)="cancelar()"
+>
+  <form id="form-nuevo-usuario" class="flex flex-col gap-6" novalidate (submit)="$event.preventDefault(); guardar()">
+    <!-- Datos personales -->
+    <fieldset class="grid gap-4 sm:grid-cols-2" [disabled]="guardando()">
+      <legend class="mb-3 text-xs font-bold tracking-wider text-neutral-500 uppercase">Datos personales</legend>
+
+      <ng-container *ngTemplateOutlet="campo; context: { $implicit: 'identificacion', etiqueta: 'Cédula', tipo: 'text', placeholder: '00000000000', autocomplete: 'off' }" />
+      <div class="hidden sm:block"></div>
+      <ng-container *ngTemplateOutlet="campo; context: { $implicit: 'nombre', etiqueta: 'Nombre', tipo: 'text', placeholder: '', autocomplete: 'given-name' }" />
+      <ng-container *ngTemplateOutlet="campo; context: { $implicit: 'apellido', etiqueta: 'Apellido', tipo: 'text', placeholder: '', autocomplete: 'family-name' }" />
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Sexo</span>
+        <select class="control" [class.border-danger-500]="error('sexo')" (change)="cambiar('sexo', $any($event.target).value)">
+          <option value="" [selected]="!form().sexo">Seleccione…</option>
+          <option value="1" [selected]="form().sexo === '1'">Masculino</option>
+          <option value="2" [selected]="form().sexo === '2'">Femenino</option>
+        </select>
+        @if (error('sexo'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Institución</span>
+        <select class="control" [class.border-danger-500]="error('institucion')" (change)="cambiar('institucion', $any($event.target).value)">
+          <option value="" [selected]="!form().institucion">Seleccione…</option>
+          @for (i of instituciones; track i.valor) {
+            <option [value]="i.valor" [selected]="form().institucion === i.valor">{{ i.label }}</option>
+          }
+        </select>
+        @if (error('institucion'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Rango</span>
+        <select
+          class="control"
+          [class.border-danger-500]="error('rangoId')"
+          [disabled]="!catalogos.hasValue()"
+          (change)="cambiar('rangoId', $any($event.target).value)"
+        >
+          <option value="" [selected]="!form().rangoId">{{ catalogos.hasValue() ? 'Seleccione…' : 'Cargando…' }}</option>
+          @if (catalogos.hasValue()) {
+            @for (r of catalogos.value().rangos; track r.id) {
+              <option [value]="r.id" [selected]="form().rangoId === '' + r.id">{{ rangoLabel(r) }}</option>
+            }
+          }
+        </select>
+        @if (error('rangoId'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Departamento</span>
+        <select
+          class="control"
+          [class.border-danger-500]="error('departamentoId')"
+          [disabled]="!catalogos.hasValue()"
+          (change)="cambiar('departamentoId', $any($event.target).value)"
+        >
+          <option value="" [selected]="!form().departamentoId">{{ catalogos.hasValue() ? 'Seleccione…' : 'Cargando…' }}</option>
+          @if (catalogos.hasValue()) {
+            @for (d of catalogos.value().departamentos; track d.id) {
+              <option [value]="d.id" [selected]="form().departamentoId === '' + d.id">{{ d.nombre }}</option>
+            }
+          }
+        </select>
+        @if (error('departamentoId'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+
+      @if (catalogos.error()) {
+        <p class="text-sm font-semibold text-danger-700 sm:col-span-2" role="alert">
+          No se pudieron cargar los rangos y departamentos.
+          <button type="button" class="underline" (click)="catalogos.reload()">Reintentar</button>
+        </p>
+      }
+    </fieldset>
+
+    <!-- Acceso -->
+    <fieldset class="grid gap-4 sm:grid-cols-2" [disabled]="guardando()">
+      <legend class="mb-3 text-xs font-bold tracking-wider text-neutral-500 uppercase">Acceso</legend>
+
+      <ng-container *ngTemplateOutlet="campo; context: { $implicit: 'userName', etiqueta: 'Usuario', tipo: 'text', placeholder: 'nombre.apellido', autocomplete: 'off' }" />
+      <div class="hidden sm:block"></div>
+      <ng-container *ngTemplateOutlet="campo; context: { $implicit: 'password', etiqueta: 'Contraseña', tipo: 'password', placeholder: '', autocomplete: 'new-password' }" />
+      <ng-container *ngTemplateOutlet="campo; context: { $implicit: 'confirmacion', etiqueta: 'Confirmar contraseña', tipo: 'password', placeholder: '', autocomplete: 'new-password' }" />
+
+      <ul class="grid gap-x-4 gap-y-1 text-xs sm:col-span-2 sm:grid-cols-3" aria-label="Requisitos de la contraseña">
+        @for (regla of reglasPassword; track regla.texto) {
+          <li
+            class="flex items-center gap-1.5 font-medium"
+            [class]="regla.cumple(form().password) ? 'text-secondary-700' : 'text-neutral-500'"
+          >
+            <span aria-hidden="true">{{ regla.cumple(form().password) ? '✓' : '•' }}</span>
+            {{ regla.texto }}
+            <span class="sr-only">{{ regla.cumple(form().password) ? '(cumple)' : '(pendiente)' }}</span>
+          </li>
+        }
+      </ul>
+    </fieldset>
+
+    <!-- Permisos iniciales -->
+    <fieldset [disabled]="guardando()">
+      <legend class="mb-3 text-xs font-bold tracking-wider text-neutral-500 uppercase">Permisos iniciales</legend>
+      @if (permisos().length === 0) {
+        <p class="text-sm text-neutral-500">No se pudo cargar el catálogo de permisos; puede asignarlos después.</p>
+      } @else {
+        <div class="grid gap-2 sm:grid-cols-2">
+          @for (p of permisos(); track p.nombre) {
+            <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-neutral-200 px-3 py-2.5 hover:bg-neutral-50">
+              <input
+                type="checkbox"
+                class="mt-0.5 h-4 w-4 shrink-0 accent-primary-500"
+                [checked]="form().permisos.has(p.nombre)"
+                (change)="alternarPermiso(p.nombre, $any($event.target).checked)"
+              />
+              <span class="min-w-0">
+                <span class="block text-sm font-bold text-neutral-900">{{ p.modulo }}</span>
+                <span class="block text-xs text-neutral-500">{{ p.descripcion }}</span>
+              </span>
+            </label>
+          }
+        </div>
+      }
+    </fieldset>
+  </form>
+
+  @if (errorGeneral()) {
+    <p class="mt-4 rounded-xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700" role="alert">
+      {{ errorGeneral() }}
+    </p>
+  }
+
+  <app-button dialogoAcciones variant="ghost" [bloque]="false" [disabled]="guardando()" (click)="cancelar()">
+    Cancelar
+  </app-button>
+  <app-button dialogoAcciones [bloque]="false" [loading]="guardando()" (click)="guardar()">Crear usuario</app-button>
+</app-dialogo>
+
+<ng-template #campo let-nombre let-etiqueta="etiqueta" let-tipo="tipo" let-placeholder="placeholder" let-autocomplete="autocomplete">
+  <label class="flex flex-col gap-1.5">
+    <span class="text-sm font-semibold text-neutral-600">{{ etiqueta }}</span>
+    <input
+      class="control"
+      [type]="tipo"
+      [placeholder]="placeholder"
+      [autocomplete]="autocomplete"
+      [value]="valor(nombre)"
+      [class.border-danger-500]="error(nombre)"
+      [attr.aria-invalid]="!!error(nombre)"
+      (input)="cambiar(nombre, $any($event.target).value)"
+    />
+    @if (error(nombre); as e) {
+      <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+    }
+  </label>
+</ng-template>

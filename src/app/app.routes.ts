@@ -5,6 +5,7 @@ import { guestGuard } from './core/guards/guest.guard';
 import { permissionGuard } from './core/guards/permission.guard';
 import { Permisos } from './core/permissions/permisos';
 
+// Página temporal para los módulos nuevos que aún no tengan UI: loadComponent: enConstruccion + data: { titulo }
 const enConstruccion = () =>
   import('./pages/en-construccion/en-construccion').then((m) => m.EnConstruccion);
 
@@ -29,23 +30,27 @@ export const routes: Routes = [
       {
         path: 'eventos',
         title: 'Eventos · SiGAV',
-        loadComponent: enConstruccion,
+        loadComponent: () => import('./pages/eventos/eventos').then((m) => m.Eventos),
         canActivate: [permissionGuard(Permisos.Eventos)],
-        data: { titulo: 'Eventos' },
       },
       {
         path: 'agentes',
         title: 'Agentes · SiGAV',
-        loadComponent: enConstruccion,
+        loadComponent: () => import('./pages/agentes/agentes').then((m) => m.Agentes),
         canActivate: [permissionGuard(Permisos.Agentes)],
-        data: { titulo: 'Agentes' },
       },
       {
         path: 'unidades-denominacion',
         title: 'Unidades · SiGAV',
-        loadComponent: enConstruccion,
+        loadComponent: () =>
+          import('./pages/unidades-denominacion/unidades-denominacion').then((m) => m.UnidadesDenominacion),
         canActivate: [permissionGuard(Permisos.UnidadesDenominacion)],
-        data: { titulo: 'Unidades y denominaciones' },
+      },
+      {
+        path: 'usuarios',
+        title: 'Usuarios · SiGAV',
+        loadComponent: () => import('./pages/usuarios/usuarios').then((m) => m.Usuarios),
+        canActivate: [permissionGuard(Permisos.Usuarios)],
       },
     ],
   },

@@ -18,7 +18,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: unknown) => {
       if (!(error instanceof HttpErrorResponse)) return throwError(() => error);
 
-      const body = error.error as { message?: string; errors?: Record<string, string[]> } | null;
+      // Con status 0 no hubo respuesta: error.error es el TypeError/ProgressEvent del navegador
+      // (su .message, p. ej. "Failed to fetch", no es un mensaje de la API)
+      const body =
+        error.status === 0 ? null : (error.error as { message?: string; errors?: Record<string, string[]> } | null);
       const message =
         (typeof body?.message === 'string' && body.message) ||
         (error.status === 0
