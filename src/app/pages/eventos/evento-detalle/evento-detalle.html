@@ -140,16 +140,49 @@
         }
       </section>
 
-      @if (e.evidencias.length) {
-        <section>
-          <h3 class="mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">Evidencias</h3>
-          <ul class="flex flex-col gap-1 text-sm text-neutral-700">
+      <section>
+        <h3 class="mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">
+          Evidencias{{ e.evidencias.length ? ' (' + e.evidencias.length + ')' : '' }}
+        </h3>
+        @if (ampliada(); as ev) {
+          <figure class="flex flex-col gap-3 rounded-xl border border-neutral-100 p-3">
+            <app-evidencia-imagen
+              class="h-[50vh] rounded-lg bg-neutral-50"
+              ajuste="contener"
+              [src]="archivo(e, ev)"
+              [alt]="titulo(e, ev)"
+            />
+            <figcaption class="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span>
+                <span class="font-semibold text-neutral-900">{{ titulo(e, ev) }}</span>
+                <span class="text-neutral-500"> · {{ fechaHora(ev.registrada) }} · {{ tamano(ev.tamanoBytes) }}</span>
+              </span>
+              <app-button variant="ghost" [bloque]="false" (click)="ampliada.set(null)">Volver a las evidencias</app-button>
+            </figcaption>
+          </figure>
+        } @else if (e.evidencias.length) {
+          <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
             @for (ev of e.evidencias; track ev.id) {
-              <li>{{ TIPO_EVIDENCIA[ev.tipo] ?? 'Evidencia' }} · {{ fechaHora(ev.registrada) }}</li>
+              <li>
+                <button
+                  type="button"
+                  class="group flex w-full flex-col overflow-hidden rounded-xl border border-neutral-100 text-left hover:border-primary-200"
+                  [attr.aria-label]="'Ampliar ' + titulo(e, ev)"
+                  (click)="ampliada.set(ev)"
+                >
+                  <app-evidencia-imagen class="aspect-[4/3] w-full bg-neutral-50" [src]="archivo(e, ev)" [alt]="titulo(e, ev)" />
+                  <span class="px-3 py-2">
+                    <span class="block text-sm font-semibold text-neutral-900 group-hover:text-primary-700">{{ titulo(e, ev) }}</span>
+                    <span class="block text-xs text-neutral-500">{{ fechaHora(ev.registrada) }}</span>
+                  </span>
+                </button>
+              </li>
             }
           </ul>
-        </section>
-      }
+        } @else {
+          <p class="text-sm text-neutral-500">No se registraron fotos ni firmas.</p>
+        }
+      </section>
     </div>
   }
 

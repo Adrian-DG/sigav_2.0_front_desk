@@ -1,5 +1,5 @@
 import { httpResource } from '@angular/common/http';
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, linkedSignal, output } from '@angular/core';
 
 import { environment } from '../../../../environments/environment';
 import { fechaHora, mensajeDeError } from '../../../core/utils/formato';
@@ -16,12 +16,15 @@ import {
   SEXO,
   TIPO_EVIDENCIA,
 } from '../eventos.model';
+import { EvidenciaImagen } from './evidencia-imagen';
+
+type Evidencia = Detalle['evidencias'][number];
 
 /** Detalle de un evento (GET /eventos/{id}) en un diálogo; se abre cuando `eventoId` no es null. */
 @Component({
   selector: 'app-evento-detalle',
   standalone: true,
-  imports: [Dialogo, DialogoAcciones, Badge, Button],
+  imports: [Dialogo, DialogoAcciones, Badge, Button, EvidenciaImagen],
   templateUrl: './evento-detalle.html',
 })
 export class EventoDetalle {
@@ -46,6 +49,28 @@ export class EventoDetalle {
   protected readonly detalle = computed(() =>
     this.evento.hasValue() && this.evento.value().id === this.eventoId() ? this.evento.value() : null,
   );
+
+  /** Evidencia mostrada en grande (null: la cuadrícula de miniaturas). */
+  protected readonly ampliada = linkedSignal<number | null, Evidencia | null>({
+    source: () => this.eventoId(),
+    computation: () => null,
+  });
+
+  protected archivo(e: Detalle, ev: Evidencia): string {
+    return `${environment.apiUrl}/eventos/${e.id}/evidencias/${ev.id}/archivo`;
+  }
+
+  /** "Foto de la cédula · Ramón Gómez", "Foto de la placa · A123456". */
+  protected titulo(e: Detalle, ev: Evidencia): string {
+    const tipo = TIPO_EVIDENCIA[ev.tipo] ?? 'Evidencia';
+    const persona = ev.ciudadanoId === null ? undefined : e.ciudadanos.find((c) => c.id === ev.ciudadanoId);
+    const de = persona ? this.nombre(persona) : this.vehiculo(e, ev.vehiculoId);
+    return de ? `${tipo} · ${de}` : tipo;
+  }
+
+  protected tamano(bytes: number): string {
+    return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
 
   protected mapa(e: Detalle): string {
     return `https://www.google.com/maps?q=${e.latitud},${e.longitud}`;

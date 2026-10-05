@@ -72,7 +72,13 @@ export const ROL_CIUDADANO: Record<number, string> = {
 export const SEXO: Record<number, string> = { 0: '—', 1: 'Masculino', 2: 'Femenino' };
 
 /** Domain/Enums TipoEvidenciaEnum. */
-export const TIPO_EVIDENCIA: Record<number, string> = { 1: 'Foto', 2: 'Firma del ciudadano', 3: 'Firma del agente' };
+export const TIPO_EVIDENCIA: Record<number, string> = {
+  1: 'Foto',
+  2: 'Firma del ciudadano',
+  3: 'Firma del agente',
+  4: 'Foto de la placa',
+  5: 'Foto de la cédula',
+};
 
 /** Mirrors EventoViewModels.cs EventoDetalleViewModel (GET /eventos/{id}). */
 export type EventoDetalle = {
@@ -126,6 +132,15 @@ export type EventoDetalle = {
     nacionalidad: string | null;
     vehiculoId: number | null;
   }[];
-  evidencias: { id: number; tipo: number; ubicacion: string; contentType: string; registrada: string }[];
+  /** El archivo: GET /eventos/{id}/evidencias/{evidenciaId}/archivo. */
+  evidencias: {
+    id: number;
+    tipo: number;
+    contentType: string;
+    tamanoBytes: number;
+    ciudadanoId: number | null;
+    vehiculoId: number | null;
+    registrada: string;
+  }[];
   createdAt: string;
 };
