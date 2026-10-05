@@ -32,6 +32,14 @@ describe('itemsVisibles', () => {
   it('muestra cada módulo según su permiso', () => {
     expect(itemsVisibles([Permisos.Eventos, Permisos.Usuarios]).map((i) => i.path)).toEqual(['/', '/eventos', '/usuarios']);
   });
+
+  it('el mapa de unidades usa el permiso de Unidades', () => {
+    expect(itemsVisibles([Permisos.UnidadesDenominacion]).map((i) => i.path)).toEqual([
+      '/',
+      '/unidades-denominacion',
+      '/unidades-mapa',
+    ]);
+  });
 });
 
 describe('AuthService', () => {

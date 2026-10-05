@@ -47,6 +47,12 @@ export const routes: Routes = [
         canActivate: [permissionGuard(Permisos.UnidadesDenominacion)],
       },
       {
+        path: 'unidades-mapa',
+        title: 'Mapa de unidades · SiGAV',
+        loadComponent: () => import('./pages/unidades-mapa/unidades-mapa').then((m) => m.UnidadesMapa),
+        canActivate: [permissionGuard(Permisos.UnidadesDenominacion)],
+      },
+      {
         path: 'usuarios',
         title: 'Usuarios · SiGAV',
         loadComponent: () => import('./pages/usuarios/usuarios').then((m) => m.Usuarios),

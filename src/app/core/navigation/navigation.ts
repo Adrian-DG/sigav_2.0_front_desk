@@ -35,6 +35,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permiso: Permisos.UnidadesDenominacion,
   },
   {
+    label: 'Mapa de unidades',
+    path: '/unidades-mapa',
+    icon: 'ubicacion',
+    descripcion: 'Dónde están ahora las unidades con sesión en la app',
+    permiso: Permisos.UnidadesDenominacion,
+  },
+  {
     label: 'Usuarios',
     path: '/usuarios',
     icon: 'usuarios',
