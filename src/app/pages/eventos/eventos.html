@@ -1,168 +1,192 @@
-<app-module-page
-  titulo="Eventos"
+<app-module-page titulo="Eventos"
   descripcion="Asistencias y accidentes reportados por los agentes desde la app, del más reciente al más antiguo."
-  icono="eventos"
->
-  <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="eventos.isLoading()" (click)="eventos.reload()">
+  icono="eventos">
+  <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="eventos.isLoading()"
+    (click)="eventos.reload()">
     <app-icon name="actualizar" class="h-4 w-4" /> Actualizar
   </app-button>
 
-  <div moduloFiltros class="contents">
-    <app-filtro etiqueta="Ciudadano" class="w-full sm:w-72">
-      <app-busqueda placeholder="Cédula, nombre, teléfono o placa" [(valor)]="ciudadano" />
-    </app-filtro>
-    <app-filtro etiqueta="Agente" class="w-full sm:w-64">
-      <app-selector
-        [opciones]="opciones().agentes"
-        [placeholder]="filtros.isLoading() ? 'Cargando…' : 'Todos'"
-        [(valor)]="agenteId"
-      />
-    </app-filtro>
-    <app-filtro etiqueta="Unidad" class="w-full sm:w-44">
-      <app-selector
-        [opciones]="opciones().unidades"
-        [placeholder]="filtros.isLoading() ? 'Cargando…' : 'Todas'"
-        [(valor)]="unidadId"
-      />
-    </app-filtro>
-    <app-filtro etiqueta="Denominación" class="w-full sm:w-64">
-      <app-selector
-        [opciones]="opciones().denominaciones"
-        [placeholder]="filtros.isLoading() ? 'Cargando…' : 'Todas'"
-        [(valor)]="denominacionId"
-      />
-    </app-filtro>
-    <app-filtro etiqueta="Tramo" class="w-full sm:w-64">
-      <app-selector
-        [opciones]="opciones().tramos"
-        [placeholder]="filtros.isLoading() ? 'Cargando…' : 'Todos'"
-        [(valor)]="tramoId"
-      />
-    </app-filtro>
-    <app-filtro etiqueta="Estado" class="w-full sm:w-40">
-      <select class="control w-full" (change)="cambiarEstado($any($event.target).value)">
-        <option value="" [selected]="estado() === null">Todos</option>
-        @for (e of estados; track e.valor) {
-          <option [value]="e.valor" [selected]="estado() === e.valor">{{ e.label }}</option>
+  <div moduloFiltros class="flex w-full flex-col gap-3">
+    <!-- A la vista solo el ciudadano; el resto, en filtros avanzados -->
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="min-w-0 flex-1 basis-64">
+        <app-busqueda placeholder="Buscar por cédula, nombre, teléfono o placa del ciudadano" [(valor)]="ciudadano" />
+      </div>
+      <button type="button"
+        class="inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 text-sm font-bold transition-colors"
+        [class]="avanzadosAbiertos() || filtrosActivos().length
+          ? 'border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100'
+          : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'"
+        aria-controls="filtros-avanzados" [attr.aria-expanded]="avanzadosAbiertos()"
+        (click)="avanzadosAbiertos.set(!avanzadosAbiertos())">
+        <app-icon name="filtro" class="h-4 w-4" />
+        Filtros avanzados
+        @if (filtrosActivos().length) {
+        <span class="rounded-full bg-primary-500 px-1.5 text-xs leading-5 text-white"
+          [attr.aria-label]="filtrosActivos().length + ' aplicados'">{{ filtrosActivos().length }}</span>
         }
-      </select>
-    </app-filtro>
-    <app-filtro etiqueta="Desde">
-      <input
-        type="date"
-        class="control"
-        [value]="desde()"
-        [max]="hasta() || null"
-        (change)="desde.set($any($event.target).value)"
-      />
-    </app-filtro>
-    <app-filtro etiqueta="Hasta">
-      <input
-        type="date"
-        class="control"
-        [value]="hasta()"
-        [min]="desde() || null"
-        (change)="hasta.set($any($event.target).value)"
-      />
-    </app-filtro>
-    @if (hayFiltros()) {
-      <button
-        type="button"
-        class="min-h-10 rounded-xl px-3 text-sm font-bold text-primary-600 hover:bg-primary-50"
-        (click)="limpiarFiltros()"
-      >
-        Limpiar filtros
+        <app-icon name="siguiente" class="h-4 w-4 transition-transform"
+          [class]="avanzadosAbiertos() ? '-rotate-90' : 'rotate-90'" />
       </button>
-    }
-    @if (filtros.error()) {
-      <p class="w-full text-xs font-semibold text-danger-700" role="alert">
+      @if (hayFiltros()) {
+      <button type="button" class="min-h-10 rounded-xl px-3 text-sm font-bold text-primary-600 hover:bg-primary-50"
+        (click)="limpiarFiltros()">
+        Limpiar
+      </button>
+      }
+    </div>
+
+    @if (avanzadosAbiertos()) {
+    <div id="filtros-avanzados"
+      class="grid gap-3 border-t border-neutral-100 pt-3 sm:grid-cols-2 lg:grid-cols-4">
+      <app-filtro etiqueta="Estado">
+        <select class="control w-full" (change)="cambiarEstado($any($event.target).value)">
+          <option value="" [selected]="estado() === null">Todos</option>
+          @for (e of estados; track e.valor) {
+          <option [value]="e.valor" [selected]="estado() === e.valor">{{ e.label }}</option>
+          }
+        </select>
+      </app-filtro>
+      <app-filtro etiqueta="Desde">
+        <input type="date" class="control w-full" [value]="desde()" [max]="hasta() || null"
+          (change)="desde.set($any($event.target).value)" />
+      </app-filtro>
+      <app-filtro etiqueta="Hasta">
+        <input type="date" class="control w-full" [value]="hasta()" [min]="desde() || null"
+          (change)="hasta.set($any($event.target).value)" />
+      </app-filtro>
+      <app-filtro etiqueta="Tramo">
+        <app-selector [opciones]="opciones().tramos" [placeholder]="filtros.isLoading() ? 'Cargando…' : 'Todos'"
+          [(valor)]="tramoId" />
+      </app-filtro>
+      <app-filtro etiqueta="Agente">
+        <app-selector [opciones]="opciones().agentes" [placeholder]="filtros.isLoading() ? 'Cargando…' : 'Todos'"
+          [(valor)]="agenteId" />
+      </app-filtro>
+      <app-filtro etiqueta="Unidad">
+        <app-selector [opciones]="opciones().unidades" [placeholder]="filtros.isLoading() ? 'Cargando…' : 'Todas'"
+          [(valor)]="unidadId" />
+      </app-filtro>
+      <app-filtro etiqueta="Denominación" class="sm:col-span-2">
+        <app-selector [opciones]="opciones().denominaciones" [placeholder]="filtros.isLoading() ? 'Cargando…' : 'Todas'"
+          [(valor)]="denominacionId" />
+      </app-filtro>
+      @if (filtros.error()) {
+      <p class="text-xs font-semibold text-danger-700 sm:col-span-2 lg:col-span-4" role="alert">
         No se pudieron cargar las opciones de los filtros.
         <button type="button" class="font-bold underline" (click)="filtros.reload()">Reintentar</button>
       </p>
+      }
+    </div>
+    } @else if (filtrosActivos().length) {
+    <!-- Panel cerrado: los filtros aplicados quedan a la vista y se pueden quitar uno a uno -->
+    <ul class="flex flex-wrap gap-2" aria-label="Filtros aplicados">
+      @for (f of filtrosActivos(); track f.etiqueta) {
+      <li class="inline-flex items-center gap-1 rounded-full bg-primary-50 py-1 pr-1 pl-3 text-xs text-primary-800 ring-1 ring-primary-100 ring-inset">
+        <span class="font-semibold">{{ f.etiqueta }}:</span>
+        <span class="max-w-48 truncate font-bold">{{ f.valor }}</span>
+        <button type="button" class="flex h-5 w-5 items-center justify-center rounded-full hover:bg-primary-100"
+          [attr.aria-label]="'Quitar filtro ' + f.etiqueta" (click)="f.quitar()">
+          <app-icon name="limpiar" class="h-3 w-3" />
+        </button>
+      </li>
+      }
+    </ul>
     }
   </div>
 
   <div class="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
-    <app-estado-lista
-      [cargando]="eventos.isLoading()"
-      [error]="error()"
-      [hayDatos]="!!resultado()?.items?.length"
+    <app-estado-lista [cargando]="eventos.isLoading()" [error]="error()" [hayDatos]="!!resultado()?.items?.length"
       tituloVacio="No hay eventos"
       [textoVacio]="hayFiltros() ? 'Ningún evento coincide con los filtros aplicados.' : 'Aún no se han reportado eventos.'"
-      (reintentar)="eventos.reload()"
-    >
+      (reintentar)="eventos.reload()">
       @if (resultado(); as r) {
-        <p class="border-b border-neutral-100 px-4 py-2 text-xs font-semibold text-neutral-500">
-          {{ r.totalCount }} {{ r.totalCount === 1 ? 'evento' : 'eventos' }}
-        </p>
-        <div class="overflow-x-auto">
-          <table class="tabla">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Reportado</th>
-                <th>Estado</th>
-                <th>Tipo</th>
-                <th>Involucrado</th>
-                <th>Ubicación</th>
-                <th>Unidad y agente</th>
-                <th><span class="sr-only">Acciones</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (evento of r.items; track evento.id) {
-                <tr class="cursor-pointer" (click)="detalleId.set(evento.id)">
-                  <td class="font-bold whitespace-nowrap text-neutral-900">{{ evento.id }}</td>
-                  <td class="whitespace-nowrap">{{ fechaHora(evento.fechaHoraReporte) }}</td>
-                  <td>
-                    <app-badge [tono]="ESTADO[evento.estado].tono">{{ ESTADO[evento.estado].label }}</app-badge>
-                  </td>
-                  <td class="min-w-48">
-                    <div class="flex flex-wrap gap-1">
-                      @for (c of evento.categorias; track c) {
-                        <app-badge [tono]="CATEGORIA[c].tono">{{ CATEGORIA[c].label }}</app-badge>
-                      }
-                    </div>
-                    <p class="mt-1 text-neutral-900">{{ evento.tipos.join(', ') }}</p>
-                  </td>
-                  <td class="min-w-44">
-                    <p class="text-neutral-900">{{ evento.ciudadanoPrincipal ?? '—' }}</p>
-                    @if (evento.vehiculoDescripcion) {
-                      <p class="text-xs text-neutral-500">{{ evento.vehiculoDescripcion }}</p>
-                    }
-                  </td>
-                  <td class="min-w-48">
-                    {{ evento.direccion || 'Sin dirección' }}
-                    @if (evento.tramo) {
-                      <p class="text-xs text-neutral-500">{{ evento.tramo }}</p>
-                    }
-                  </td>
-                  <td class="min-w-48">
-                    <p class="font-bold text-neutral-900">{{ evento.unidadFicha || '—' }}</p>
-                    <p class="text-xs text-neutral-500">{{ evento.unidadDenominacion }}</p>
-                    @if (evento.agente) {
-                      <p class="text-xs text-neutral-500">{{ evento.agente }}</p>
-                    }
-                  </td>
-                  <td class="text-right">
-                    <button
-                      type="button"
-                      class="rounded-lg px-3 py-1.5 text-sm font-bold whitespace-nowrap text-primary-600 hover:bg-primary-50"
-                      [attr.aria-label]="'Ver el evento ' + evento.id"
-                      (click)="$event.stopPropagation(); detalleId.set(evento.id)"
-                    >
-                      Ver
-                    </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-        <app-paginador [pagina]="pagina()" [tamano]="tamano" [total]="r.totalCount" (paginaChange)="pagina.set($event)" />
+      <p class="border-b border-neutral-100 px-4 py-2 text-xs font-semibold text-neutral-500">
+        {{ r.totalCount }} {{ r.totalCount === 1 ? 'evento' : 'eventos' }}
+      </p>
+      <div class="overflow-x-auto">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Evento</th>
+              <th>Involucrados</th>
+              <th>Unidad y agente</th>
+              <th><span class="sr-only">Opciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (evento of r.items; track evento.id) {
+            <tr class="cursor-pointer" (click)="detalleId.set(evento.id)" (contextmenu)="abrirOpciones($event, evento)">
+              <!-- Evento: N.º y fecha; estado y categorías en una línea; tipos debajo -->
+              <td class="min-w-64">
+                <p class="text-xs text-neutral-500">
+                  <span class="font-bold text-neutral-900">#{{ evento.id }}</span> · {{ fechaHora(evento.fechaHoraReporte) }}
+                </p>
+                <div class="mt-1 flex flex-wrap items-center gap-1">
+                  <app-badge [tono]="ESTADO[evento.estado].tono">{{ ESTADO[evento.estado].label }}</app-badge>
+                  @for (c of evento.categorias; track c) {
+                  <app-badge [tono]="CATEGORIA[c].tono">{{ CATEGORIA[c].label }}</app-badge>
+                  }
+                  <span class="ml-1 font-semibold text-neutral-900">{{ evento.tipos.join(', ') }}</span>
+                </div>
+              </td>
+
+              <!-- Involucrados: persona principal y vehículo principal, cada uno con su total -->
+              <td class="min-w-60">
+                <div class="flex items-center gap-2"
+                  [title]="evento.totalPersonas + (evento.totalPersonas === 1 ? ' persona' : ' personas')">
+                  <app-icon name="persona" class="h-4 w-4 text-neutral-400" />
+                  <span class="min-w-0 truncate" [class]="evento.ciudadanoPrincipal ? 'text-neutral-900' : 'text-neutral-400'">
+                    {{ evento.ciudadanoPrincipal ?? 'Sin personas' }}
+                  </span>
+                  @if (evento.totalPersonas > 1) {
+                  <span class="shrink-0 rounded-full bg-neutral-100 px-1.5 text-xs leading-5 font-bold text-neutral-600"
+                    [attr.aria-label]="'y ' + (evento.totalPersonas - 1) + ' más'">+{{ evento.totalPersonas - 1 }}</span>
+                  }
+                </div>
+                <div class="mt-1 flex items-center gap-2"
+                  [title]="evento.totalVehiculos + (evento.totalVehiculos === 1 ? ' vehículo' : ' vehículos')">
+                  <app-icon name="vehiculo" class="h-4 w-4 text-neutral-400" />
+                  <span class="min-w-0 truncate text-xs" [class]="evento.vehiculoDescripcion ? 'text-neutral-700' : 'text-neutral-400'">
+                    {{ evento.vehiculoDescripcion ?? 'Sin vehículos' }}
+                  </span>
+                  @if (evento.totalVehiculos > 1) {
+                  <span class="shrink-0 rounded-full bg-neutral-100 px-1.5 text-xs leading-5 font-bold text-neutral-600"
+                    [attr.aria-label]="'y ' + (evento.totalVehiculos - 1) + ' más'">+{{ evento.totalVehiculos - 1 }}</span>
+                  }
+                </div>
+              </td>
+
+              <!-- Unidad principal (ficha · denominación) y su agente -->
+              <td class="min-w-56">
+                <p class="text-neutral-900">
+                  <span class="font-bold">{{ evento.unidadFicha || '—' }}</span>
+                  @if (evento.unidadDenominacion) {
+                  <span class="text-neutral-500"> · {{ evento.unidadDenominacion }}</span>
+                  }
+                </p>
+                <p class="mt-1 text-xs text-neutral-500">{{ evento.agente ?? 'Sin agente' }}</p>
+              </td>
+
+              <td class="w-12 text-right align-middle">
+                <button type="button"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-primary-50 hover:text-primary-700 focus-visible:ring-2 focus-visible:ring-primary-200 focus-visible:outline-none"
+                  aria-haspopup="menu"
+                  [attr.aria-label]="'Opciones del evento ' + evento.id"
+                  (click)="abrirOpciones($event, evento)">
+                  <app-icon name="masOpciones" class="h-5 w-5" />
+                </button>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-paginador [pagina]="pagina()" [tamano]="tamano" [total]="r.totalCount" (paginaChange)="pagina.set($event)" />
       }
     </app-estado-lista>
   </div>
 </app-module-page>
 
 <app-evento-detalle [eventoId]="detalleId()" (cerrar)="detalleId.set(null)" />
+<app-menu-contextual />

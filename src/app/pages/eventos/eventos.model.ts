@@ -34,6 +34,12 @@ export type EventoListItem = {
   /** Agente de la unidad principal (rango, nombre y apellido). */
   agente: string | null;
   tramo: string | null;
+  /** Todas las personas y vehículos del evento, el principal incluido. */
+  totalPersonas: number;
+  totalVehiculos: number;
+  /** Unidad principal y su agente (para filtrar el listado por ellos). */
+  unidadId: number | null;
+  agenteId: number | null;
 };
 
 /** Opción de un filtro (Application/Features/Operaciones/Eventos/GetFiltrosEventos.cs). */
