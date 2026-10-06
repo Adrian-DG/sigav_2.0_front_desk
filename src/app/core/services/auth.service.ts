@@ -53,7 +53,9 @@ export class AuthService {
   private readonly tokenSignal = signal<string | null>(leerTokenVigente());
   readonly token = this.tokenSignal.asReadonly();
 
-  private readonly sesionSignal = signal<SesionViewModel | null>(this.tokenSignal() ? leerSesionGuardada() : null);
+  private readonly sesionSignal = signal<SesionViewModel | null>(
+    this.tokenSignal() ? leerSesionGuardada() : null,
+  );
   readonly sesion = this.sesionSignal.asReadonly();
 
   readonly isAuthenticated = computed(() => this.tokenSignal() !== null);

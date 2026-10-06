@@ -3,10 +3,10 @@ import { CanActivateFn, Router } from '@angular/router';
 
 import { AuthService } from '../services/auth.service';
 
-/** Bloquea rutas protegidas sin sesión; conserva la URL pedida en ?redirectTo para volver tras el login. */
-export const authGuard: CanActivateFn = (_route, state) => {
+/** Bloquea rutas protegidas sin sesión. Tras el login siempre se entra por el inicio. */
+export const authGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   if (auth.isAuthenticated()) return true;
 
-  return inject(Router).createUrlTree(['/login'], { queryParams: { redirectTo: state.url } });
+  return inject(Router).createUrlTree(['/login']);
 };

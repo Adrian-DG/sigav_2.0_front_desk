@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 import { ApiError } from '../../core/models/api-error';
 import { AuthService } from '../../core/services/auth.service';
@@ -9,13 +10,13 @@ import { TextField } from '../../shared/components/text-field/text-field';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [TextField, Button],
+  // FormsModule: NgForm toma el <form> (ngSubmit + preventDefault); sin él, Enter/"Ingresar" hace un submit nativo que recarga /login
+  imports: [FormsModule, TextField, Button],
   templateUrl: './login.html',
 })
 export class Login {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
 
   readonly username = signal('');
   readonly password = signal('');
@@ -50,7 +51,6 @@ export class Login {
 
   private redirectTrasLogin(): void {
     this.isSubmitting.set(false);
-    const redirectTo = this.route.snapshot.queryParamMap.get('redirectTo');
-    this.router.navigateByUrl(redirectTo || '/');
+    this.router.navigateByUrl('/');
   }
 }
