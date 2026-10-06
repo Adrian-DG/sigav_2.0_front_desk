@@ -126,6 +126,8 @@ export type EventoDetalle = {
     modelo: string | null;
     color: string | null;
     descripcion: string;
+    /** Tipos atendidos al vehículo (ids de `tipos`). */
+    tipoEventoIds: number[];
   }[];
   ciudadanos: {
     id: number;
@@ -137,6 +139,8 @@ export type EventoDetalle = {
     telefono: string | null;
     nacionalidad: string | null;
     vehiculoId: number | null;
+    /** Tipos atendidos a la persona (ids de `tipos`); vacío = comparte los de su vehículo. */
+    tipoEventoIds: number[];
   }[];
   /** El archivo: GET /eventos/{id}/evidencias/{evidenciaId}/archivo. */
   evidencias: {

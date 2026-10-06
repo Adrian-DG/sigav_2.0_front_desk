@@ -86,6 +86,11 @@ export class EventoDetalle {
     return v.descripcion && v.descripcion !== v.placa ? `${v.placa} · ${v.descripcion}` : v.placa;
   }
 
+  /** Nombres de los tipos atendidos a un vehículo o persona (un backend anterior no los envía). */
+  protected tiposDe(e: Detalle, ids: number[] | undefined): string[] {
+    return (ids ?? []).map((id) => e.tipos.find((t) => t.id === id)?.nombre).filter((n): n is string => !!n);
+  }
+
   protected vehiculo(e: Detalle, id: number | null): string | null {
     const v = id === null ? undefined : e.vehiculos.find((x) => x.id === id);
     return v ? this.describir(v) : null;

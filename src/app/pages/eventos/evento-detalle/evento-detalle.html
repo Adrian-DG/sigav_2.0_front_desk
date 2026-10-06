@@ -102,6 +102,7 @@
                   <th>Rol</th>
                   <th>Contacto</th>
                   <th>Vehículo</th>
+                  <th>Atendido</th>
                 </tr>
               </thead>
               <tbody>
@@ -117,6 +118,15 @@
                     </td>
                     <td class="whitespace-nowrap">{{ c.telefono ?? '—' }}</td>
                     <td class="min-w-40">{{ vehiculo(e, c.vehiculoId) ?? '—' }}</td>
+                    <td class="min-w-36">
+                      @if (tiposDe(e, c.tipoEventoIds); as tipos) {
+                        @if (tipos.length) {
+                          {{ tipos.join(', ') }}
+                        } @else {
+                          <span class="text-neutral-400">{{ c.vehiculoId !== null ? 'Lo del vehículo' : '—' }}</span>
+                        }
+                      }
+                    </td>
                   </tr>
                 }
               </tbody>
@@ -130,9 +140,20 @@
       <section>
         <h3 class="mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">Vehículos</h3>
         @if (e.vehiculos.length) {
-          <ul class="flex flex-col gap-1 text-sm">
+          <ul class="flex flex-col gap-2 text-sm">
             @for (v of e.vehiculos; track v.id) {
-              <li class="text-neutral-900">{{ describir(v) }}</li>
+              <li class="text-neutral-900">
+                {{ describir(v) }}
+                @if (tiposDe(e, v.tipoEventoIds); as tipos) {
+                  @if (tipos.length) {
+                    <span class="mt-1 flex flex-wrap gap-1">
+                      @for (t of tipos; track t) {
+                        <app-badge tono="primary">{{ t }}</app-badge>
+                      }
+                    </span>
+                  }
+                }
+              </li>
             }
           </ul>
         } @else {
