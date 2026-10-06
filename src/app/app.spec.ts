@@ -38,6 +38,14 @@ describe('itemsVisibles', () => {
       '/usuarios',
     ]);
   });
+
+  it('el mapa de unidades usa el permiso de Unidades', () => {
+    expect(itemsVisibles([Permisos.UnidadesDenominacion]).map((i) => i.path)).toEqual([
+      '/',
+      '/unidades-denominacion',
+      '/unidades-mapa',
+    ]);
+  });
 });
 
 describe('AuthService', () => {
