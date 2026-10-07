@@ -136,6 +136,8 @@ export type EventoDetalle = {
     nombre: string | null;
     apellido: string | null;
     sexo: number;
+    /** Años al momento del evento. */
+    edad?: number | null;
     telefono: string | null;
     nacionalidad: string | null;
     vehiculoId: number | null;

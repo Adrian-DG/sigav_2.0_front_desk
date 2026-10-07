@@ -16,9 +16,8 @@
         class="inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 text-sm font-bold transition-colors"
         [class]="avanzadosAbiertos() || filtrosActivos().length
           ? 'border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100'
-          : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'"
-        aria-controls="filtros-avanzados" [attr.aria-expanded]="avanzadosAbiertos()"
-        (click)="avanzadosAbiertos.set(!avanzadosAbiertos())">
+          : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'" aria-controls="filtros-avanzados"
+        [attr.aria-expanded]="avanzadosAbiertos()" (click)="avanzadosAbiertos.set(!avanzadosAbiertos())">
         <app-icon name="filtro" class="h-4 w-4" />
         Filtros avanzados
         @if (filtrosActivos().length) {
@@ -37,8 +36,7 @@
     </div>
 
     @if (avanzadosAbiertos()) {
-    <div id="filtros-avanzados"
-      class="grid gap-3 border-t border-neutral-100 pt-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div id="filtros-avanzados" class="grid gap-3 border-t border-neutral-100 pt-3 sm:grid-cols-2 lg:grid-cols-4">
       <app-filtro etiqueta="Estado">
         <select class="control w-full" (change)="cambiarEstado($any($event.target).value)">
           <option value="" [selected]="estado() === null">Todos</option>
@@ -82,7 +80,8 @@
     <!-- Panel cerrado: los filtros aplicados quedan a la vista y se pueden quitar uno a uno -->
     <ul class="flex flex-wrap gap-2" aria-label="Filtros aplicados">
       @for (f of filtrosActivos(); track f.etiqueta) {
-      <li class="inline-flex items-center gap-1 rounded-full bg-primary-50 py-1 pr-1 pl-3 text-xs text-primary-800 ring-1 ring-primary-100 ring-inset">
+      <li
+        class="inline-flex items-center gap-1 rounded-full bg-primary-50 py-1 pr-1 pl-3 text-xs text-primary-800 ring-1 ring-primary-100 ring-inset">
         <span class="font-semibold">{{ f.etiqueta }}:</span>
         <span class="max-w-48 truncate font-bold">{{ f.valor }}</span>
         <button type="button" class="flex h-5 w-5 items-center justify-center rounded-full hover:bg-primary-100"
@@ -120,7 +119,8 @@
               <!-- Evento: N.º y fecha; estado y categorías en una línea; tipos debajo -->
               <td class="min-w-64">
                 <p class="text-xs text-neutral-500">
-                  <span class="font-bold text-neutral-900">#{{ evento.id }}</span> · {{ fechaHora(evento.fechaHoraReporte) }}
+                  <span class="font-bold text-neutral-900">#{{ evento.id }}</span> · {{
+                  fechaHora(evento.fechaHoraReporte) }}
                 </p>
                 <div class="mt-1 flex flex-wrap items-center gap-1">
                   <app-badge [tono]="ESTADO[evento.estado].tono">{{ ESTADO[evento.estado].label }}</app-badge>
@@ -136,23 +136,27 @@
                 <div class="flex items-center gap-2"
                   [title]="evento.totalPersonas + (evento.totalPersonas === 1 ? ' persona' : ' personas')">
                   <app-icon name="persona" class="h-4 w-4 text-neutral-400" />
-                  <span class="min-w-0 truncate" [class]="evento.ciudadanoPrincipal ? 'text-neutral-900' : 'text-neutral-400'">
+                  <span class="min-w-0 truncate"
+                    [class]="evento.ciudadanoPrincipal ? 'text-neutral-900' : 'text-neutral-400'">
                     {{ evento.ciudadanoPrincipal ?? 'Sin personas' }}
                   </span>
                   @if (evento.totalPersonas > 1) {
                   <span class="shrink-0 rounded-full bg-neutral-100 px-1.5 text-xs leading-5 font-bold text-neutral-600"
-                    [attr.aria-label]="'y ' + (evento.totalPersonas - 1) + ' más'">+{{ evento.totalPersonas - 1 }}</span>
+                    [attr.aria-label]="'y ' + (evento.totalPersonas - 1) + ' más'">+{{ evento.totalPersonas - 1
+                    }}</span>
                   }
                 </div>
                 <div class="mt-1 flex items-center gap-2"
                   [title]="evento.totalVehiculos + (evento.totalVehiculos === 1 ? ' vehículo' : ' vehículos')">
                   <app-icon name="vehiculo" class="h-4 w-4 text-neutral-400" />
-                  <span class="min-w-0 truncate text-xs" [class]="evento.vehiculoDescripcion ? 'text-neutral-700' : 'text-neutral-400'">
+                  <span class="min-w-0 truncate text-xs"
+                    [class]="evento.vehiculoDescripcion ? 'text-neutral-700' : 'text-neutral-400'">
                     {{ evento.vehiculoDescripcion ?? 'Sin vehículos' }}
                   </span>
                   @if (evento.totalVehiculos > 1) {
                   <span class="shrink-0 rounded-full bg-neutral-100 px-1.5 text-xs leading-5 font-bold text-neutral-600"
-                    [attr.aria-label]="'y ' + (evento.totalVehiculos - 1) + ' más'">+{{ evento.totalVehiculos - 1 }}</span>
+                    [attr.aria-label]="'y ' + (evento.totalVehiculos - 1) + ' más'">+{{ evento.totalVehiculos - 1
+                    }}</span>
                   }
                 </div>
               </td>
@@ -171,8 +175,7 @@
               <td class="w-12 text-right align-middle">
                 <button type="button"
                   class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-primary-50 hover:text-primary-700 focus-visible:ring-2 focus-visible:ring-primary-200 focus-visible:outline-none"
-                  aria-haspopup="menu"
-                  [attr.aria-label]="'Opciones del evento ' + evento.id"
+                  aria-haspopup="menu" [attr.aria-label]="'Opciones del evento ' + evento.id"
                   (click)="abrirOpciones($event, evento)">
                   <app-icon name="masOpciones" class="h-5 w-5" />
                 </button>

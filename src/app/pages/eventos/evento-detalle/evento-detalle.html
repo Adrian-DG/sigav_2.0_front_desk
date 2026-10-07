@@ -114,7 +114,9 @@
                     </td>
                     <td class="whitespace-nowrap">
                       {{ ROL_CIUDADANO[c.rol] }}
-                      <p class="text-xs text-neutral-500">{{ SEXO[c.sexo] }}{{ c.nacionalidad ? ' · ' + c.nacionalidad : '' }}</p>
+                      <p class="text-xs text-neutral-500">
+                        {{ SEXO[c.sexo] }}{{ c.edad != null ? ' · ' + c.edad + ' años' : '' }}{{ c.nacionalidad ? ' · ' + c.nacionalidad : '' }}
+                      </p>
                     </td>
                     <td class="whitespace-nowrap">{{ c.telefono ?? '—' }}</td>
                     <td class="min-w-40">{{ vehiculo(e, c.vehiculoId) ?? '—' }}</td>
