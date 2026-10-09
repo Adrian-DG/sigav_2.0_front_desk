@@ -15,9 +15,11 @@ import { Paginador } from '../../shared/components/paginador/paginador';
 import { Alta, type TipoAlta } from './alta/alta';
 import { Historial, type OrigenHistorial } from './historial/historial';
 import { AsignarDenominacion, type InicioAsignacion } from './asignar-denominacion/asignar-denominacion';
+import { Importar } from './importar/importar';
 import {
   type AsignacionResultado,
   type Denominacion,
+  type ImportacionResultado,
   JERARQUIA,
   type OpcionesAsignacion,
   type Unidad,
@@ -51,6 +53,7 @@ type Vista = 'unidades' | 'denominaciones';
     AsignarDenominacion,
     Alta,
     Historial,
+    Importar,
   ],
   templateUrl: './unidades-denominacion.html',
 })
@@ -115,6 +118,7 @@ export class UnidadesDenominacion {
   /** Diálogo de asignación abierto (con lo preseleccionado), o null. */
   protected readonly asignando = signal<InicioAsignacion | null>(null);
   protected readonly alta = signal<TipoAlta | null>(null);
+  protected readonly importando = signal(false);
   protected readonly aviso = signal<string | null>(null);
   /** Historial abierto (de una unidad o de una denominación), o null. */
   protected readonly historialDe = signal<OrigenHistorial | null>(null);
@@ -141,6 +145,22 @@ export class UnidadesDenominacion {
     const partes = [`${r.ficha} ahora tiene la denominación ${r.denominacion}.`];
     if (r.denominacionAnterior) partes.push(`${r.denominacionAnterior} quedó libre.`);
     for (const u of r.unidadesLiberadas) partes.push(`${u.ficha} quedó sin denominación y No disponible.`);
+    this.terminar(partes.join(' '));
+  }
+
+  protected abrirImportacion(): void {
+    this.aviso.set(null);
+    this.importando.set(true);
+  }
+
+  protected importado(r: ImportacionResultado): void {
+    this.importando.set(false);
+    const partes = [`Carga aplicada: ${r.totalFilas} filas.`];
+    if (r.asignaciones) partes.push(`${r.asignaciones} asignaciones.`);
+    if (r.unidadesCreadas) partes.push(`${r.unidadesCreadas} unidades nuevas.`);
+    if (r.denominacionesCreadas) partes.push(`${r.denominacionesCreadas} denominaciones nuevas.`);
+    if (r.unidadesSinDenominacion.length)
+      partes.push(`${r.unidadesSinDenominacion.map((u) => u.ficha).join(', ')} quedaron sin denominación y No disponibles.`);
     this.terminar(partes.join(' '));
   }
 

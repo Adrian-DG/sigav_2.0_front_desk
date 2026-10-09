@@ -1,0 +1,151 @@
+<app-dialogo
+  [abierto]="abierto()"
+  titulo="Cargar desde Excel"
+  descripcion="Fichas y denominaciones: se crean las que no existan y se asigna cada denominación a su ficha."
+  ancho="amplio"
+  (cerrar)="cancelar()"
+>
+  <div class="flex flex-col gap-4">
+    <div class="rounded-xl bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
+      <p>
+        Columnas: <strong>Ficha</strong>, <strong>Placa</strong> (opcional), <strong>Denominación</strong>,
+        <strong>Tramo</strong> y <strong>Nivel</strong> (solo para denominaciones nuevas). Si la denominación la tiene otra
+        unidad, esa unidad queda sin denominación y No disponible.
+      </p>
+      <button
+        type="button"
+        class="mt-2 text-sm font-bold text-primary-600 hover:text-primary-700 disabled:text-neutral-400"
+        [disabled]="descargando()"
+        (click)="descargarPlantilla()"
+      >
+        {{ descargando() ? 'Descargando…' : 'Descargar plantilla' }}
+      </button>
+    </div>
+
+    <fieldset class="flex flex-col gap-4" [disabled]="!!enviando()">
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Archivo (.xlsx)</span>
+        <input
+          type="file"
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          class="control file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-1 file:text-sm file:font-bold file:text-primary-700"
+          (change)="elegir($event)"
+        />
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Motivo <span class="font-normal text-neutral-400">(opcional, queda en el historial)</span></span>
+        <input
+          class="control"
+          autocomplete="off"
+          placeholder="Carga desde Excel: nombre del archivo"
+          [maxLength]="motivoMax"
+          [value]="motivo()"
+          (input)="cambiarMotivo($any($event.target).value)"
+        />
+      </label>
+    </fieldset>
+
+    @if (analisis(); as a) {
+      <div class="flex flex-wrap gap-2" role="status">
+        <app-badge tono="neutral">{{ a.totalFilas }} filas</app-badge>
+        @if (a.conErrores) {
+          <app-badge tono="danger">{{ a.conErrores }} con errores</app-badge>
+        }
+        @if (a.asignaciones) {
+          <app-badge tono="primary">{{ a.asignaciones }} asignaciones</app-badge>
+        }
+        @if (a.unidadesCreadas) {
+          <app-badge tono="secondary">{{ a.unidadesCreadas }} unidades nuevas</app-badge>
+        }
+        @if (a.denominacionesCreadas) {
+          <app-badge tono="accent">{{ a.denominacionesCreadas }} denominaciones nuevas</app-badge>
+        }
+        @if (a.sinCambios) {
+          <app-badge tono="neutral">{{ a.sinCambios }} sin cambios</app-badge>
+        }
+      </div>
+
+      @if (a.unidadesSinDenominacion.length) {
+        <p class="rounded-xl bg-warning-50 px-4 py-3 text-sm font-semibold text-warning-800">
+          Quedarán sin denominación y No disponibles:
+          {{ fichasSinDenominacion() }}.
+        </p>
+      }
+
+      <label class="inline-flex items-center gap-2 text-sm text-neutral-600">
+        <input type="checkbox" [checked]="soloRelevantes()" (change)="soloRelevantes.set($any($event.target).checked)" />
+        Ocultar las filas sin cambios
+      </label>
+
+      <div class="overflow-x-auto rounded-xl border border-neutral-100">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Fila</th>
+              <th>Ficha</th>
+              <th>Denominación</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of filas(); track f.fila) {
+              <tr>
+                <td class="whitespace-nowrap text-neutral-500">{{ f.fila }}</td>
+                <td class="font-bold whitespace-nowrap text-neutral-900">
+                  {{ f.ficha || '—' }}
+                  @if (f.unidadNueva) {
+                    <app-badge tono="secondary" class="ml-1">Nueva</app-badge>
+                  }
+                </td>
+                <td class="min-w-40">
+                  {{ f.denominacion || '—' }}
+                  @if (f.denominacionNueva) {
+                    <app-badge tono="accent" class="ml-1">Nueva</app-badge>
+                  }
+                </td>
+                <td class="min-w-64 text-sm">
+                  @if (f.estado === 'error') {
+                    @for (e of f.errores; track $index) {
+                      <p class="text-danger-700">{{ e }}</p>
+                    }
+                  } @else if (f.estado === 'sin-cambios') {
+                    <span class="text-neutral-400">Ya tiene esa denominación.</span>
+                  } @else {
+                    @for (c of f.cambios; track $index) {
+                      <p>{{ c }}</p>
+                    }
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="text-center text-neutral-500">Ninguna fila cambia nada.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (error()) {
+      <p class="rounded-xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700" role="alert">{{ error() }}</p>
+    }
+  </div>
+
+  <app-button dialogoAcciones variant="ghost" [bloque]="false" [disabled]="!!enviando()" (click)="cancelar()">Cancelar</app-button>
+  <app-button
+    dialogoAcciones
+    [variant]="puedeAplicar() ? 'ghost' : 'primary'"
+    [bloque]="false"
+    [disabled]="!archivo() || enviando() === 'aplicar'"
+    [loading]="enviando() === 'analizar'"
+    (click)="analizar()"
+  >
+    {{ analisis() ? 'Volver a analizar' : 'Analizar archivo' }}
+  </app-button>
+  @if (puedeAplicar()) {
+    <app-button dialogoAcciones [bloque]="false" [loading]="enviando() === 'aplicar'" [disabled]="enviando() === 'analizar'" (click)="aplicar()">
+      Aplicar cambios
+    </app-button>
+  }
+</app-dialogo>
