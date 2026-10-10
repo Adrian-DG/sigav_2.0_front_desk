@@ -43,5 +43,3 @@ __screenshots__/
 .DS_Store
 Thumbs.db
 
-# environment: la URL del Dev Tunnel es de cada PC (ver README)
-src/environments/environment.dev-tunnel.ts
