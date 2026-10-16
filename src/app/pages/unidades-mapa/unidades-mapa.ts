@@ -112,7 +112,7 @@ export class UnidadesMapa {
       (u) =>
         visibles.has(u.estado) &&
         (tramoId === null || u.tramoId === tramoId) &&
-        (!texto || normalizar(`${u.ficha} ${u.denominacion ?? ''} ${u.agente} ${u.placa ?? ''}`).includes(texto)),
+        (!texto || normalizar(`${u.ficha} ${u.denominacion ?? ''} ${u.agente} ${u.componente ?? ''} ${u.placa ?? ''}`).includes(texto)),
     );
   });
 
@@ -374,6 +374,7 @@ export class UnidadesMapa {
     linea(`${u.nivel ?? TIPOS[tipoDeUnidad(u.nivel)].label} ${u.ficha}${u.placa ? ` · ${u.placa}` : ''}`, 'font-extrabold');
     linea(u.denominacion ? `${u.denominacion}${u.tramo ? ` · ${u.tramo}` : ''}` : 'Sin denominación', 'text-neutral-600');
     linea(`${u.rango ? `${u.rango} ` : ''}${u.agente}`, 'mt-1');
+    if (u.componente) linea(`Componente: ${u.componenteRango ? `${u.componenteRango} ` : ''}${u.componente}`);
     const estado = `${ESTADOS[u.estado].label} · ${hace(Date.parse(u.fechaHoraRecibidaUtc), this.ahora())}`;
     linea(estado, 'mt-1 font-bold');
     div.lastElementChild?.setAttribute('style', `color: ${ESTADOS[u.estado].color}`);

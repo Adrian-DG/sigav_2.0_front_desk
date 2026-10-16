@@ -85,7 +85,7 @@
                 <app-badge [tono]="u.rol === 1 ? 'primary' : 'neutral'">{{ ROL_UNIDAD[u.rol] }}</app-badge>
               </div>
               <p class="text-neutral-600">{{ u.denominacion }} · {{ u.nivelDenominacion }}</p>
-              <p class="text-neutral-600">Agente: {{ u.agente || '—' }}</p>
+              <p class="text-neutral-600">Agente que atiende: {{ u.agente || '—' }}</p>
             </li>
           }
         </ul>

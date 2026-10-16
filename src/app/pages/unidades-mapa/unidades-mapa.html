@@ -146,6 +146,9 @@
                   <span class="font-semibold text-neutral-500">· {{ u.denominacion ?? 'Sin denominación' }}</span>
                 </span>
                 <span class="block truncate text-sm text-neutral-600">{{ u.rango }} {{ u.agente }}</span>
+                @if (u.componente) {
+                  <span class="block truncate text-sm text-neutral-600">Componente: {{ u.componenteRango }} {{ u.componente }}</span>
+                }
                 <span class="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
                   <app-badge [tono]="ESTADOS[u.estado].tono">{{ ESTADOS[u.estado].label }}</app-badge>
                   {{ hace(u) }}
