@@ -1,9 +1,12 @@
 <app-module-page titulo="Eventos"
-  descripcion="Asistencias y accidentes reportados por los agentes desde la app, del más reciente al más antiguo."
+  descripcion="Asistencias y accidentes reportados por los agentes o asignados por el call center, del más reciente al más antiguo."
   icono="eventos">
   <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="eventos.isLoading()"
     (click)="eventos.reload()">
     <app-icon name="actualizar" class="h-4 w-4" /> Actualizar
+  </app-button>
+  <app-button *hasPermission="permisoAsignar" moduloAcciones [bloque]="false" (click)="nuevoEventoAbierto.set(true)">
+    <app-icon name="asignar" class="h-4 w-4" /> Nuevo evento
   </app-button>
 
   <div moduloFiltros class="flex w-full flex-col gap-3">
@@ -93,6 +96,17 @@
     </ul>
     }
   </div>
+
+  @if (aviso(); as a) {
+  <div
+    class="mb-4 flex items-start justify-between gap-3 rounded-2xl border border-secondary-200 bg-secondary-50 px-4 py-3 text-sm font-semibold text-secondary-800"
+    role="status">
+    <span>{{ a }}</span>
+    <button type="button" aria-label="Cerrar aviso" (click)="aviso.set(null)">
+      <app-icon name="limpiar" class="h-4 w-4" />
+    </button>
+  </div>
+  }
 
   <div class="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
     <app-estado-lista [cargando]="eventos.isLoading()" [error]="error()" [hayDatos]="!!resultado()?.items?.length"
@@ -192,4 +206,6 @@
 </app-module-page>
 
 <app-evento-detalle [eventoId]="detalleId()" (cerrar)="detalleId.set(null)" />
+<app-nuevo-evento *hasPermission="permisoAsignar" [abierto]="nuevoEventoAbierto()" (cerrar)="nuevoEventoAbierto.set(false)"
+  (asignado)="asignado($event)" />
 <app-menu-contextual />

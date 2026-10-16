@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 
 import { environment } from '../../../environments/environment';
 import type { PagedResult } from '../../core/models/paged-result';
+import { Permisos } from '../../core/permissions/permisos';
 import { fechaCorta, fechaHora, mensajeDeError } from '../../core/utils/formato';
 import { Badge } from '../../shared/components/badge/badge';
 import { Busqueda } from '../../shared/components/busqueda/busqueda';
@@ -15,7 +16,9 @@ import { MenuContextual, type OpcionMenu } from '../../shared/components/menu-co
 import { ModulePage, ModuloAcciones, ModuloFiltros } from '../../shared/components/module-page/module-page';
 import { Paginador } from '../../shared/components/paginador/paginador';
 import { Selector } from '../../shared/components/selector/selector';
+import { HasPermissionDirective } from '../../shared/directives/has-permission.directive';
 import { EventoDetalle } from './evento-detalle/evento-detalle';
+import { NuevoEvento, type EventoAsignado } from './nuevo-evento/nuevo-evento';
 import {
   CATEGORIA_EVENTO,
   ESTADO_EVENTO,
@@ -37,6 +40,8 @@ type FiltroActivo = { etiqueta: string; valor: string; quitar: () => void };
  * de GET /eventos/filtros. Un clic en la fila abre el detalle; clic derecho o ⋯, sus opciones.
  * Los filtros iniciales pueden llegar en la URL (desde, hasta, agenteId, unidadId, denominacionId,
  * tramoId): así abre, por ejemplo, el panel de estadísticas del inicio.
+ * Con el permiso eventos.asignar, el call center crea aquí un evento y lo asigna a una unidad
+ * disponible (que lo recibe como pendiente, con notificación).
  */
 @Component({
   selector: 'app-eventos',
@@ -55,6 +60,8 @@ type FiltroActivo = { etiqueta: string; valor: string; quitar: () => void };
     Icon,
     MenuContextual,
     EventoDetalle,
+    NuevoEvento,
+    HasPermissionDirective,
   ],
   templateUrl: './eventos.html',
 })
@@ -152,6 +159,11 @@ export class Eventos {
   /** Evento abierto en el diálogo de detalle. */
   protected readonly detalleId = signal<number | null>(null);
 
+  // Call center (permiso eventos.asignar): crear un evento y asignarlo a una unidad
+  protected readonly permisoAsignar = Permisos.AsignarEventos;
+  protected readonly nuevoEventoAbierto = signal(false);
+  protected readonly aviso = signal<string | null>(null);
+
   private readonly menu = viewChild.required(MenuContextual);
 
   /** Opciones de una fila: desde el botón ⋯ de la columna Opciones o con clic derecho sobre la fila. */
@@ -177,6 +189,18 @@ export class Eventos {
       accion: () => void navigator.clipboard?.writeText(String(item.id)),
     });
     this.menu().abrir(evento, opciones, `Evento #${item.id}`);
+  }
+
+  /** El evento nuevo queda pendiente en la unidad: se avisa si recibió la notificación y se recarga el listado. */
+  protected asignado(evento: EventoAsignado): void {
+    this.nuevoEventoAbierto.set(false);
+    const destino = `${evento.ficha || 'la unidad'}${evento.agente ? ` (${evento.agente})` : ''}`;
+    this.aviso.set(
+      evento.notificada
+        ? `Evento No. ${evento.id} asignado a ${destino}. La unidad recibió la notificación.`
+        : `Evento No. ${evento.id} asignado a ${destino}. La unidad no tiene la app conectada: lo verá como pendiente al abrirla.`,
+    );
+    this.eventos.reload();
   }
 
   protected cambiarEstado(valor: string): void {

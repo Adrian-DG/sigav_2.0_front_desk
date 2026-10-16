@@ -6,6 +6,8 @@
  */
 export const Permisos = {
   Eventos: 'eventos.ver',
+  AsignarEventos: 'eventos.asignar',
+  NotificarUnidades: 'unidades.notificar',
   Agentes: 'agentes.ver',
   UnidadesDenominacion: 'unidades.ver',
   Usuarios: 'usuarios.gestionar',

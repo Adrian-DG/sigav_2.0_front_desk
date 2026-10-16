@@ -49,6 +49,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permiso: Permisos.UnidadesDenominacion,
   },
   {
+    label: 'Notificaciones',
+    path: '/notificaciones',
+    icon: 'notificacion',
+    descripcion: 'Mensajes a las unidades en campo',
+    permiso: Permisos.NotificarUnidades,
+  },
+  {
     label: 'Usuarios',
     path: '/usuarios',
     icon: 'usuarios',

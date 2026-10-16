@@ -59,6 +59,12 @@ export const routes: Routes = [
         canActivate: [permissionGuard(Permisos.UnidadesDenominacion)],
       },
       {
+        path: 'notificaciones',
+        title: 'Notificaciones · SiGAV',
+        loadComponent: () => import('./pages/notificaciones/notificaciones').then((m) => m.Notificaciones),
+        canActivate: [permissionGuard(Permisos.NotificarUnidades)],
+      },
+      {
         path: 'usuarios',
         title: 'Usuarios · SiGAV',
         loadComponent: () => import('./pages/usuarios/usuarios').then((m) => m.Usuarios),
