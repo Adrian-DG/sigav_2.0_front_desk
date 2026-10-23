@@ -72,3 +72,27 @@ export const MENSAJE_PLACA = 'Formato: 1 o 2 letras y 5 o 6 números (ej.: EL001
 export function erroresPorClave(errors: Record<string, string[]> | null | undefined): Record<string, string> {
   return Object.fromEntries(Object.entries(errors ?? {}).map(([clave, mensajes]) => [clave.toLowerCase(), mensajes[0]]));
 }
+
+/** POST /unidades/importar (Unidades/ImportarUnidadesDenominacion.cs ImportacionUnidadesResult). */
+export type ImportacionResultado = {
+  /** true: se guardó. false: vista previa, o hubo errores y no se guardó nada. */
+  aplicado: boolean;
+  totalFilas: number;
+  conErrores: number;
+  sinCambios: number;
+  asignaciones: number;
+  unidadesCreadas: number;
+  denominacionesCreadas: number;
+  filas: {
+    fila: number;
+    ficha: string;
+    denominacion: string;
+    estado: 'error' | 'sin-cambios' | 'cambios';
+    unidadNueva: boolean;
+    denominacionNueva: boolean;
+    cambios: string[];
+    errores: string[];
+  }[];
+  /** Unidades que no están en el archivo y pierden su denominación (quedan No disponibles). */
+  unidadesSinDenominacion: { id: number; ficha: string }[];
+};
