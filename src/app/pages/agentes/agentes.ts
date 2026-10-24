@@ -13,8 +13,9 @@ import { Filtro } from '../../shared/components/filtro/filtro';
 import { Icon } from '../../shared/components/icon/icon';
 import { ModulePage, ModuloAcciones, ModuloFiltros } from '../../shared/components/module-page/module-page';
 import { Paginador } from '../../shared/components/paginador/paginador';
-import { AREAS_OPERATIVAS, type Agente } from './agentes.model';
+import { AREAS_OPERATIVAS, type Agente, type ImportacionAgentesResultado } from './agentes.model';
 import { EditarAgente } from './editar-agente/editar-agente';
+import { ImportarAgentes } from './importar-agentes/importar-agentes';
 
 const TAMANO_PAGINA = 20;
 
@@ -26,7 +27,8 @@ type Aviso = { texto: string; deshacer?: () => void; error?: boolean };
  * Personal operativo (GET /agentes): búsqueda por cédula o nombre y estado de autorización.
  * El interruptor de cada fila autoriza o quita el acceso a la app (PATCH /agentes/{id}/autorizacion);
  * al quitarlo, la API rechaza de inmediato la sesión que el agente tenga abierta. "Editar" cambia
- * sus datos, rango o especialidad (PUT /agentes/{id}).
+ * sus datos, rango o especialidad (PUT /agentes/{id}). "Cargar Excel" crea o actualiza agentes en
+ * bloque (POST /agentes/importar).
  */
 @Component({
   selector: 'app-agentes',
@@ -43,6 +45,7 @@ type Aviso = { texto: string; deshacer?: () => void; error?: boolean };
     Button,
     Icon,
     EditarAgente,
+    ImportarAgentes,
   ],
   templateUrl: './agentes.html',
 })
@@ -96,6 +99,7 @@ export class Agentes {
   protected readonly cambiando = signal<ReadonlySet<number>>(new Set());
   protected readonly aviso = signal<Aviso | null>(null);
   protected readonly editando = signal<Agente | null>(null);
+  protected readonly importando = signal(false);
 
   protected alternarAutorizacion(agente: Agente): void {
     this.cambiarAutorizacion(agente, !agente.autorizado, true);
@@ -138,6 +142,22 @@ export class Agentes {
     this.editando.set(null);
     this.aviso.set({ texto });
     this.agentes.reload();
+  }
+
+  protected abrirImportacion(): void {
+    this.aviso.set(null);
+    this.importando.set(true);
+  }
+
+  protected importado(r: ImportacionAgentesResultado): void {
+    this.importando.set(false);
+    const partes = [`Carga aplicada: ${r.totalFilas} filas.`];
+    if (r.agentesCreados) partes.push(`${r.agentesCreados} agentes nuevos.`);
+    if (r.agentesActualizados) partes.push(`${r.agentesActualizados} actualizados.`);
+    if (r.sinCambios) partes.push(`${r.sinCambios} sin cambios.`);
+    this.aviso.set({ texto: partes.join(' ') });
+    this.agentes.reload();
+    this.pendientes.reload();
   }
 
   protected verPendientes(): void {

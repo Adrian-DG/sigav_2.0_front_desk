@@ -27,3 +27,23 @@ export type Agente = {
   isActive: boolean;
   createdAt: string;
 };
+
+/** POST /agentes/importar (Agentes/ImportarAgentes.cs ImportacionAgentesResult). */
+export type ImportacionAgentesResultado = {
+  /** true: se guardó. false: vista previa, o hubo errores y no se guardó nada. */
+  aplicado: boolean;
+  totalFilas: number;
+  conErrores: number;
+  sinCambios: number;
+  agentesCreados: number;
+  agentesActualizados: number;
+  filas: {
+    fila: number;
+    identificacion: string;
+    nombre: string;
+    estado: 'error' | 'sin-cambios' | 'cambios';
+    agenteNuevo: boolean;
+    cambios: string[];
+    errores: string[];
+  }[];
+};

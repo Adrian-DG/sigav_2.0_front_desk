@@ -6,6 +6,7 @@
   <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="agentes.isLoading()" (click)="agentes.reload()">
     <app-icon name="actualizar" class="h-4 w-4" /> Actualizar
   </app-button>
+  <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirImportacion()">Cargar Excel</app-button>
 
   <div moduloFiltros class="contents">
     <app-filtro etiqueta="Buscar" class="w-full sm:w-72">
@@ -173,3 +174,5 @@
 </app-module-page>
 
 <app-editar-agente [agente]="editando()" (cerrar)="editando.set(null)" (guardado)="guardado($event)" />
+
+<app-importar-agentes [abierto]="importando()" (cerrar)="importando.set(false)" (importado)="importado($event)" />
