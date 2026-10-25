@@ -1,4 +1,4 @@
-import { httpResource } from '@angular/common/http';
+import { HttpClient, httpResource } from '@angular/common/http';
 import { Component, computed, inject, linkedSignal, signal, viewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
@@ -42,6 +42,7 @@ type FiltroActivo = { etiqueta: string; valor: string; quitar: () => void };
  * tramoId): así abre, por ejemplo, el panel de estadísticas del inicio.
  * Con el permiso eventos.asignar, el call center crea aquí un evento y lo asigna a una unidad
  * disponible (que lo recibe como pendiente, con notificación).
+ * Desde las opciones de la fila se imprime el formulario de asistencia (PDF que genera la API).
  */
 @Component({
   selector: 'app-eventos',
@@ -73,6 +74,7 @@ export class Eventos {
   protected readonly tamano = TAMANO_PAGINA;
 
   private readonly url = inject(ActivatedRoute).snapshot.queryParamMap;
+  private readonly http = inject(HttpClient);
 
   protected readonly estado = signal<EstadoEvento | null>(null);
   protected readonly desde = signal(fechaDeUrl(this.url.get('desde')));
@@ -163,6 +165,7 @@ export class Eventos {
   protected readonly permisoAsignar = Permisos.AsignarEventos;
   protected readonly nuevoEventoAbierto = signal(false);
   protected readonly aviso = signal<string | null>(null);
+  protected readonly errorReporte = signal<string | null>(null);
 
   private readonly menu = viewChild.required(MenuContextual);
 
@@ -170,6 +173,7 @@ export class Eventos {
   protected abrirOpciones(evento: MouseEvent, item: EventoListItem): void {
     const opciones: OpcionMenu[] = [
       { label: 'Ver detalle', icono: 'detalle', accion: () => this.detalleId.set(item.id) },
+      { label: 'Imprimir formulario (PDF)', icono: 'imprimir', accion: () => this.imprimirFormulario(item.id) },
     ];
     if (item.unidadId !== null && item.unidadId !== this.unidadId()) {
       const unidadId = item.unidadId;
@@ -189,6 +193,37 @@ export class Eventos {
       accion: () => void navigator.clipboard?.writeText(String(item.id)),
     });
     this.menu().abrir(evento, opciones, `Evento #${item.id}`);
+  }
+
+  /**
+   * Formulario de asistencia (APVI-FOR-003) del evento: se abre en otra pestaña, en el visor de PDF
+   * del navegador (imprimir, guardar). Si el navegador bloquea la pestaña, se descarga.
+   */
+  protected imprimirFormulario(id: number): void {
+    this.errorReporte.set(null);
+    // La pestaña se abre ya, dentro del clic: abierta al llegar el PDF, el navegador la bloquearía
+    const pestana = window.open('', '_blank');
+    pestana?.document.write('<p style="font-family: sans-serif; padding: 24px">Generando el formulario de asistencia…</p>');
+
+    this.http.get(`${environment.apiUrl}/eventos/${id}/reporte`, { responseType: 'blob' }).subscribe({
+      next: (pdf) => {
+        const url = URL.createObjectURL(pdf);
+        if (pestana) {
+          pestana.location.href = url;
+        } else {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `asistencia-${id}.pdf`;
+          a.click();
+        }
+        // Margen para que la pestaña termine de cargarlo antes de liberar la URL
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      },
+      error: (error: unknown) => {
+        pestana?.close();
+        this.errorReporte.set(`No se pudo generar el formulario del evento #${id}: ${mensajeDeError(error)}`);
+      },
+    });
   }
 
   /** El evento nuevo queda pendiente en la unidad: se avisa si recibió la notificación y se recarga el listado. */
