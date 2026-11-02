@@ -1,8 +1,10 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { itemsVisibles } from '../../core/navigation/navigation';
 import { AuthService } from '../../core/services/auth.service';
+import { Button } from '../../shared/components/button/button';
+import { Dialogo, DialogoAcciones } from '../../shared/components/dialogo/dialogo';
 import { Icon } from '../../shared/components/icon/icon';
 
 /**
@@ -12,11 +14,14 @@ import { Icon } from '../../shared/components/icon/icon';
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, Icon],
+  imports: [RouterLink, RouterLinkActive, Icon, Dialogo, DialogoAcciones, Button],
   templateUrl: './sidebar.html',
 })
 export class Sidebar {
   protected readonly auth = inject(AuthService);
+
+  /** Confirmación antes de cerrar sesión. */
+  protected readonly confirmandoSalida = signal(false);
 
   protected readonly items = computed(() => itemsVisibles(this.auth.permisos()));
 
@@ -28,4 +33,9 @@ export class Sidebar {
       (partes[0]?.[0] ?? '') + (partes.length > 1 ? partes[partes.length - 1][0] : '')
     ).toUpperCase();
   });
+
+  protected cerrarSesion(): void {
+    this.confirmandoSalida.set(false);
+    this.auth.logout();
+  }
 }

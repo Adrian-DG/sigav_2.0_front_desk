@@ -60,10 +60,27 @@
         title="Cerrar sesión"
         aria-label="Cerrar sesión"
         class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-primary-200 transition-colors hover:bg-white/10 hover:text-white"
-        (click)="auth.logout()"
+        (click)="confirmandoSalida.set(true)"
       >
         <app-icon name="salir" class="h-5 w-5" />
       </button>
     </div>
   </div>
 </aside>
+
+<app-dialogo
+  [abierto]="confirmandoSalida()"
+  titulo="Cerrar sesión"
+  (cerrar)="confirmandoSalida.set(false)"
+>
+  <p class="text-sm text-neutral-600">
+    ¿Seguro que deseas cerrar sesión? Tendrás que volver a iniciar sesión para continuar.
+  </p>
+
+  <app-button dialogoAcciones variant="ghost" [bloque]="false" (click)="confirmandoSalida.set(false)">
+    Cancelar
+  </app-button>
+  <app-button dialogoAcciones [bloque]="false" (click)="cerrarSesion()">
+    Cerrar sesión
+  </app-button>
+</app-dialogo>
