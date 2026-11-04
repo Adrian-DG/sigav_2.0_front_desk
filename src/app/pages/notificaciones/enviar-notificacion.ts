@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 
 import { environment } from '../../../environments/environment';
+import { huella } from '../../core/utils/huella';
 import { mensajeDeError } from '../../core/utils/formato';
 import { Button } from '../../shared/components/button/button';
 import { Dialogo, DialogoAcciones } from '../../shared/components/dialogo/dialogo';
@@ -32,7 +33,9 @@ type Destino = 'todas' | 'seleccion';
       [abierto]="!!inicio()"
       titulo="Enviar notificación"
       descripcion="Llega al momento a las unidades que tengan la app conectada."
-      (cerrar)="cancelar()"
+      [sucio]="sucio()"
+      [ocupado]="enviando()"
+      (cerrar)="cerrar.emit()"
     >
       <form class="flex flex-col gap-5" novalidate (submit)="$event.preventDefault(); enviar()">
         <fieldset class="flex flex-col gap-2" [disabled]="enviando()">
@@ -120,6 +123,11 @@ export class EnviarNotificacion {
   readonly unidades = input<UnidadDisponibilidad[]>([]);
   readonly cargandoUnidades = input(false);
   readonly cerrar = output();
+
+  private readonly dialogo = viewChild.required(Dialogo);
+  /** Contenido del formulario al abrirlo: si cambia, cerrar pide confirmación. */
+  private readonly huellaInicial = signal('');
+  protected readonly sucio = computed(() => huella([this.destino(), this.seleccion(), this.titulo(), this.mensaje()]) !== this.huellaInicial());
   readonly enviada = output<EnviarNotificacionResult>();
 
   protected readonly tituloMax = TITULO_MAX;
@@ -153,6 +161,7 @@ export class EnviarNotificacion {
         this.seleccion.set(new Set(ids));
         this.titulo.set('');
         this.mensaje.set('');
+        this.huellaInicial.set(huella([this.destino(), this.seleccion(), this.titulo(), this.mensaje()]));
         this.intentado.set(false);
         this.errorGeneral.set(null);
       });
@@ -169,7 +178,7 @@ export class EnviarNotificacion {
   }
 
   protected cancelar(): void {
-    if (!this.enviando()) this.cerrar.emit();
+    this.dialogo().solicitarCierre();
   }
 
   protected enviar(): void {

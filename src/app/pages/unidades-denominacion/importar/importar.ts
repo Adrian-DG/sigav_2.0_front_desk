@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 
 import { environment } from '../../../../environments/environment';
 import { ApiError } from '../../../core/models/api-error';
@@ -28,6 +28,10 @@ export class Importar {
 
   readonly abierto = input(false);
   readonly cerrar = output();
+
+  private readonly dialogo = viewChild.required(Dialogo);
+  /** Con un archivo elegido, cerrar pide confirmación. */
+  protected readonly sucio = computed(() => this.archivo() !== null);
   readonly importado = output<ImportacionResultado>();
 
   protected readonly motivoMax = MOTIVO_MAX;
@@ -103,7 +107,7 @@ export class Importar {
   }
 
   protected cancelar(): void {
-    if (!this.enviando()) this.cerrar.emit();
+    this.dialogo().solicitarCierre();
   }
 
   protected descargarPlantilla(): void {

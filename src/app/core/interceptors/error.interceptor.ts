@@ -30,7 +30,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             ? 'El servidor no está disponible en este momento. Intente de nuevo en unos minutos.'
             : `La solicitud falló con estado ${error.status}.`);
 
-      if (error.status === 401 && req.headers.has('Authorization')) auth.logout();
+      if (error.status === 401 && req.headers.has('Authorization')) auth.logout({ vencida: true });
 
       return throwError(() => new ApiError(error.status, message, body?.errors ?? null));
     }),

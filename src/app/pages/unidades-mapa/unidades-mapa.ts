@@ -14,6 +14,7 @@ import {
 import type * as Leaflet from 'leaflet';
 
 import { environment } from '../../../environments/environment';
+import { AvisosService } from '../../core/services/avisos.service';
 import { fechaHora, mensajeDeError } from '../../core/utils/formato';
 import { Badge } from '../../shared/components/badge/badge';
 import { Busqueda } from '../../shared/components/busqueda/busqueda';
@@ -44,7 +45,6 @@ const LIMITES_RD: Leaflet.LatLngBoundsExpression = [
 /** La app envía cada ~30 s; con 15 s el mapa queda a lo sumo un envío atrás. */
 const INTERVALO_ACTUALIZACION_MS = 15_000;
 
-type Aviso = { texto: string; error?: boolean };
 
 /**
  * Ubicación de las unidades (GET /unidades/posiciones), que la app móvil envía mientras el agente
@@ -126,7 +126,7 @@ export class UnidadesMapa {
 
   protected readonly porLiberar = signal<PosicionUnidad | null>(null);
   protected readonly liberando = signal(false);
-  protected readonly aviso = signal<Aviso | null>(null);
+  private readonly avisos = inject(AvisosService);
 
   // ------------------------------------------------ Leaflet
 
@@ -223,13 +223,13 @@ export class UnidadesMapa {
       next: () => {
         this.liberando.set(false);
         this.porLiberar.set(null);
-        this.aviso.set({ texto: `Se cerró la sesión de ${u.agente} en la unidad ${u.ficha}: otro agente ya puede iniciar sesión con ella.` });
+        this.avisos.exito(`Se cerró la sesión de ${u.agente} en la unidad ${u.ficha}: otro agente ya puede iniciar sesión con ella.`);
         this.posiciones.reload();
       },
       error: (error: unknown) => {
         this.liberando.set(false);
         this.porLiberar.set(null);
-        this.aviso.set({ texto: mensajeDeError(error) ?? 'No se pudo liberar la sesión.', error: true });
+        this.avisos.error(mensajeDeError(error) ?? 'No se pudo liberar la sesión.');
       },
     });
   }

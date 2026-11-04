@@ -19,6 +19,12 @@
       <h2 class="text-2xl font-extrabold text-neutral-900">Bienvenido</h2>
       <p class="mt-1 text-sm font-medium text-neutral-500">Ingresa tus credenciales para continuar</p>
 
+      @if (sesionVencida) {
+        <p class="mt-6 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm font-semibold text-warning-900" role="status">
+          Su sesión venció. Inicie sesión de nuevo para continuar donde estaba.
+        </p>
+      }
+
       <form class="mt-8 flex flex-col gap-5" (ngSubmit)="submit()">
         <app-text-field
           label="Usuario"

@@ -1,8 +1,9 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 
 import { environment } from '../../../../environments/environment';
 import { ApiError } from '../../../core/models/api-error';
+import { huella } from '../../../core/utils/huella';
 import { mensajeDeError } from '../../../core/utils/formato';
 import { Button } from '../../../shared/components/button/button';
 import { Dialogo, DialogoAcciones } from '../../../shared/components/dialogo/dialogo';
@@ -38,6 +39,11 @@ export class Alta {
   readonly tipo = input<TipoAlta | null>(null);
   readonly opciones = input<OpcionesAsignacion | undefined>();
   readonly cerrar = output();
+
+  private readonly dialogo = viewChild.required(Dialogo);
+  /** Contenido del formulario al abrirlo: si cambia, cerrar pide confirmación. */
+  private readonly huellaInicial = signal('');
+  protected readonly sucio = computed(() => huella([this.ficha(), this.placa(), this.nombre(), this.tramoId(), this.nivelId()]) !== this.huellaInicial());
   /** Texto del aviso para el listado. */
   readonly creado = output<string>();
 
@@ -79,6 +85,7 @@ export class Alta {
         this.nombre.set('');
         this.tramoId.set(null);
         this.nivelId.set('');
+        this.huellaInicial.set(huella([this.ficha(), this.placa(), this.nombre(), this.tramoId(), this.nivelId()]));
         this.intentado.set(false);
         this.erroresApi.set({});
         this.errorGeneral.set(null);
@@ -96,7 +103,7 @@ export class Alta {
   }
 
   protected cancelar(): void {
-    if (!this.guardando()) this.cerrar.emit();
+    this.dialogo().solicitarCierre();
   }
 
   protected guardar(): void {

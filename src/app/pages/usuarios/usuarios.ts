@@ -2,6 +2,7 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
 
 import { environment } from '../../../environments/environment';
+import { AvisosService } from '../../core/services/avisos.service';
 import { INSTITUCIONES } from '../../core/models/catalogos';
 import type { PagedResult } from '../../core/models/paged-result';
 import { Permisos } from '../../core/permissions/permisos';
@@ -76,20 +77,18 @@ export class Usuarios {
   );
 
   protected readonly miId = computed(() => this.auth.sesion()?.userId ?? null);
-  /** Aviso tras guardar (se muestra sobre el listado). */
-  protected readonly aviso = signal<string | null>(null);
+  private readonly avisos = inject(AvisosService);
 
   // Alta de usuario
   protected readonly nuevoAbierto = signal(false);
 
   protected abrirNuevo(): void {
-    this.aviso.set(null);
     this.nuevoAbierto.set(true);
   }
 
   protected usuarioCreado(nombre: string): void {
     this.nuevoAbierto.set(false);
-    this.aviso.set(`Se creó el usuario ${nombre}. Ya puede iniciar sesión con su usuario y contraseña.`);
+    this.avisos.exito(`Se creó el usuario ${nombre}. Ya puede iniciar sesión con su usuario y contraseña.`);
     this.usuarios.reload();
   }
 
@@ -120,11 +119,6 @@ export class Usuarios {
     this.editando.set(usuario);
     this.seleccion.set(new Set(usuario.permisos));
     this.errorGuardar.set(null);
-    this.aviso.set(null);
-  }
-
-  protected cerrar(): void {
-    if (!this.guardando()) this.editando.set(null);
   }
 
   protected alternar(permiso: string, marcado: boolean): void {
@@ -147,7 +141,7 @@ export class Usuarios {
       next: () => {
         this.guardando.set(false);
         this.editando.set(null);
-        this.aviso.set(
+        this.avisos.exito(
           usuario.id === this.miId()
             ? 'Se actualizaron sus permisos. Cierre sesión y vuelva a entrar para que se apliquen.'
             : `Se actualizaron los permisos de ${usuario.nombreCompleto || usuario.userName}. Se aplicarán la próxima vez que inicie sesión.`,

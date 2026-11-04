@@ -2,6 +2,7 @@ import { httpResource } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, linkedSignal, signal } from '@angular/core';
 
 import { environment } from '../../../environments/environment';
+import { AvisosService } from '../../core/services/avisos.service';
 import { mensajeDeError } from '../../core/utils/formato';
 import { Badge } from '../../shared/components/badge/badge';
 import { Busqueda } from '../../shared/components/busqueda/busqueda';
@@ -58,7 +59,7 @@ export class Notificaciones {
   });
 
   protected readonly notificacion = signal<InicioNotificacion | null>(null);
-  protected readonly aviso = signal<string | null>(null);
+  private readonly avisos = inject(AvisosService);
 
   constructor() {
     const recargar = setInterval(() => {
@@ -70,7 +71,7 @@ export class Notificaciones {
   protected enviada(resultado: EnviarNotificacionResult): void {
     this.notificacion.set(null);
     const n = resultado.unidadesConectadas;
-    this.aviso.set(
+    this.avisos.exito(
       n === 0
         ? 'Notificación enviada, pero ninguna de las unidades tenía la app conectada.'
         : `Notificación enviada a ${n} ${n === 1 ? 'unidad conectada' : 'unidades conectadas'}.`,

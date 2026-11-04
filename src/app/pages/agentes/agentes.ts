@@ -2,6 +2,7 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
 
 import { environment } from '../../../environments/environment';
+import { AvisosService } from '../../core/services/avisos.service';
 import { INSTITUCIONES } from '../../core/models/catalogos';
 import type { PagedResult } from '../../core/models/paged-result';
 import { fecha, mensajeDeError } from '../../core/utils/formato';
@@ -21,7 +22,6 @@ const TAMANO_PAGINA = 20;
 
 type Autorizacion = 'todos' | 'autorizados' | 'pendientes';
 
-type Aviso = { texto: string; deshacer?: () => void; error?: boolean };
 
 /**
  * Personal operativo (GET /agentes): búsqueda por cédula o nombre y estado de autorización.
@@ -97,7 +97,7 @@ export class Agentes {
 
   /** Ids con un cambio de autorización en curso (su interruptor queda deshabilitado). */
   protected readonly cambiando = signal<ReadonlySet<number>>(new Set());
-  protected readonly aviso = signal<Aviso | null>(null);
+  private readonly avisos = inject(AvisosService);
   protected readonly editando = signal<Agente | null>(null);
   protected readonly importando = signal(false);
 
@@ -108,22 +108,23 @@ export class Agentes {
   private cambiarAutorizacion(agente: Agente, autorizado: boolean, permitirDeshacer: boolean): void {
     if (this.cambiando().has(agente.id)) return;
     this.cambiando.update((s) => new Set(s).add(agente.id));
-    this.aviso.set(null);
 
     this.http.patch(`${environment.apiUrl}/agentes/${agente.id}/autorizacion`, { autorizado }).subscribe({
       next: () => {
         this.terminarCambio(agente.id);
         const nombre = `${agente.nombre} ${agente.apellido}`;
-        this.aviso.set({
-          texto: autorizado
+        this.avisos.exito(
+          autorizado
             ? `Se autorizó a ${nombre}: ya puede iniciar sesión en la app.`
             : `Se quitó el acceso a ${nombre}: ya no puede usar la app (si tenía una sesión abierta, se cerrará).`,
-          deshacer: permitirDeshacer ? () => this.cambiarAutorizacion(agente, !autorizado, false) : undefined,
-        });
+          permitirDeshacer
+            ? { label: 'Deshacer', ejecutar: () => this.cambiarAutorizacion(agente, !autorizado, false) }
+            : undefined,
+        );
       },
       error: (error: unknown) => {
         this.terminarCambio(agente.id);
-        this.aviso.set({ texto: mensajeDeError(error) ?? 'No se pudo cambiar la autorización.', error: true });
+        this.avisos.error(mensajeDeError(error) ?? 'No se pudo cambiar la autorización.');
       },
     });
   }
@@ -140,12 +141,11 @@ export class Agentes {
 
   protected guardado(texto: string): void {
     this.editando.set(null);
-    this.aviso.set({ texto });
+    this.avisos.exito(texto);
     this.agentes.reload();
   }
 
   protected abrirImportacion(): void {
-    this.aviso.set(null);
     this.importando.set(true);
   }
 
@@ -155,7 +155,7 @@ export class Agentes {
     if (r.agentesCreados) partes.push(`${r.agentesCreados} agentes nuevos.`);
     if (r.agentesActualizados) partes.push(`${r.agentesActualizados} actualizados.`);
     if (r.sinCambios) partes.push(`${r.sinCambios} sin cambios.`);
-    this.aviso.set({ texto: partes.join(' ') });
+    this.avisos.exito(partes.join(' '));
     this.agentes.reload();
     this.pendientes.reload();
   }

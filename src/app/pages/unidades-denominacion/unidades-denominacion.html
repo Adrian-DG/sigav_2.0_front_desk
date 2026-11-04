@@ -37,17 +37,6 @@
     </app-filtro>
   </div>
 
-  @if (aviso()) {
-    <div
-      class="mb-4 flex items-start justify-between gap-3 rounded-2xl border border-secondary-200 bg-secondary-50 px-4 py-3 text-sm font-semibold text-secondary-800"
-      role="status"
-    >
-      <span>{{ aviso() }}</span>
-      <button type="button" aria-label="Cerrar aviso" class="text-secondary-700 hover:text-secondary-900" (click)="aviso.set(null)">
-        <app-icon name="limpiar" class="h-4 w-4" />
-      </button>
-    </div>
-  }
 
   <div class="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
     <app-estado-lista

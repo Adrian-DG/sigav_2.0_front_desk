@@ -1,9 +1,9 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { ApiError } from '../../core/models/api-error';
-import { AuthService } from '../../core/services/auth.service';
+import { AuthService, rutaInterna } from '../../core/services/auth.service';
 import { Button } from '../../shared/components/button/button';
 import { TextField } from '../../shared/components/text-field/text-field';
 
@@ -17,6 +17,12 @@ import { TextField } from '../../shared/components/text-field/text-field';
 export class Login {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly url = inject(ActivatedRoute).snapshot.queryParamMap;
+
+  /** Llegó aquí porque la sesión venció o fue revocada. */
+  readonly sesionVencida = this.url.has('vencida');
+  /** Página a la que se vuelve tras entrar (la que pidió sin sesión o en la que venció). */
+  private readonly volver = rutaInterna(this.url.get('volver')) ?? '/';
 
   readonly username = signal('');
   readonly password = signal('');
@@ -51,6 +57,6 @@ export class Login {
 
   private redirectTrasLogin(): void {
     this.isSubmitting.set(false);
-    this.router.navigateByUrl('/');
+    this.router.navigateByUrl(this.volver);
   }
 }

@@ -3,7 +3,9 @@
   ancho="amplio"
   titulo="Editar agente"
   [descripcion]="agente() ? agente()!.nombreCompleto + ' · ' + agente()!.identificacion : ''"
-  (cerrar)="cancelar()"
+  [sucio]="sucio()"
+  [ocupado]="guardando()"
+  (cerrar)="cerrar.emit()"
 >
   <form class="flex flex-col gap-6" novalidate (submit)="$event.preventDefault(); guardar()">
     <fieldset class="grid gap-4 sm:grid-cols-2" [disabled]="guardando()">

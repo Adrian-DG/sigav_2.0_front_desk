@@ -1,7 +1,8 @@
 import { httpResource } from '@angular/common/http';
-import { Component, computed, linkedSignal, signal } from '@angular/core';
+import { Component, computed, linkedSignal, signal, inject } from '@angular/core';
 
 import { environment } from '../../../environments/environment';
+import { AvisosService } from '../../core/services/avisos.service';
 import type { PagedResult } from '../../core/models/paged-result';
 import { mensajeDeError } from '../../core/utils/formato';
 import { Badge } from '../../shared/components/badge/badge';
@@ -119,7 +120,7 @@ export class UnidadesDenominacion {
   protected readonly asignando = signal<InicioAsignacion | null>(null);
   protected readonly alta = signal<TipoAlta | null>(null);
   protected readonly importando = signal(false);
-  protected readonly aviso = signal<string | null>(null);
+  private readonly avisos = inject(AvisosService);
   /** Historial abierto (de una unidad o de una denominación), o null. */
   protected readonly historialDe = signal<OrigenHistorial | null>(null);
 
@@ -149,7 +150,6 @@ export class UnidadesDenominacion {
   }
 
   protected abrirImportacion(): void {
-    this.aviso.set(null);
     this.importando.set(true);
   }
 
@@ -170,14 +170,13 @@ export class UnidadesDenominacion {
   }
 
   private prepararDialogo(): void {
-    this.aviso.set(null);
     // Siempre datos frescos: otro usuario pudo cambiar asignaciones desde la última vez
     if (this.usado()) this.opciones.reload();
     else this.usado.set(true);
   }
 
   private terminar(aviso: string): void {
-    this.aviso.set(aviso);
+    this.avisos.exito(aviso);
     this.unidades.reload();
     this.denominaciones.reload();
     this.opciones.reload();

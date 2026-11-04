@@ -1,14 +1,16 @@
 import { Component, input } from '@angular/core';
 
-type Variant = 'primary' | 'secondary' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 const VARIANT_CLASSES: Record<Variant, string> = {
   primary: 'bg-primary-500 text-white hover:bg-primary-600 disabled:bg-primary-300',
   secondary: 'bg-secondary-500 text-white hover:bg-secondary-600 disabled:bg-secondary-300',
   ghost: 'bg-transparent text-primary-600 hover:bg-primary-50 disabled:text-neutral-300',
+  /** Acciones destructivas o difíciles de deshacer (liberar, cerrar sesión, descartar). */
+  danger: 'bg-danger-600 text-white hover:bg-danger-700 disabled:bg-danger-300',
 };
 
-/** Botón equivalente al Button de Mobile (components/ui/button.tsx): mismas variantes, mismo loading/disabled. */
+/** Botón equivalente al Button de Mobile (components/ui/button.tsx): mismas variantes (más `danger`), mismo loading/disabled. */
 @Component({
   selector: 'app-button',
   standalone: true,

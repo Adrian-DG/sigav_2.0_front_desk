@@ -3,7 +3,9 @@
   ancho="amplio"
   titulo="Nuevo usuario"
   descripcion="Usuario del front desk: datos personales, acceso y permisos iniciales."
-  (cerrar)="cancelar()"
+  [sucio]="sucio()"
+  [ocupado]="guardando()"
+  (cerrar)="cerrar.emit()"
 >
   <form id="form-nuevo-usuario" class="flex flex-col gap-6" novalidate (submit)="$event.preventDefault(); guardar()">
     <!-- Datos personales -->
