@@ -8,6 +8,8 @@ export type NavItem = {
   descripcion: string;
   /** Sin permiso: visible para cualquier sesión web. */
   permiso?: Permiso;
+  /** Solo se marca activo en su ruta exacta (no en sus subrutas, que tienen su propio ítem). */
+  exacto?: boolean;
 };
 
 /** Menú lateral y accesos del inicio. Cada ruta protegida en app.routes.ts usa el mismo permiso. */
@@ -54,6 +56,21 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: 'notificacion',
     descripcion: 'Mensajes a las unidades en campo',
     permiso: Permisos.NotificarUnidades,
+  },
+  {
+    label: 'Calidad',
+    path: '/calidad',
+    icon: 'calidad',
+    descripcion: 'Encuesta de satisfacción a los ciudadanos atendidos',
+    permiso: Permisos.Calidad,
+    exacto: true,
+  },
+  {
+    label: 'Encuestas',
+    path: '/calidad/encuestas',
+    icon: 'encuesta',
+    descripcion: 'Versiones de las preguntas de la encuesta de calidad',
+    permiso: Permisos.EncuestasCalidad,
   },
   {
     label: 'Usuarios',

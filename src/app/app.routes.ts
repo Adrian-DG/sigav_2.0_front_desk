@@ -65,6 +65,18 @@ export const routes: Routes = [
         canActivate: [permissionGuard(Permisos.NotificarUnidades)],
       },
       {
+        path: 'calidad',
+        title: 'Calidad · SiGAV',
+        loadComponent: () => import('./pages/calidad/calidad').then((m) => m.Calidad),
+        canActivate: [permissionGuard(Permisos.Calidad)],
+      },
+      {
+        path: 'calidad/encuestas',
+        title: 'Encuestas de calidad · SiGAV',
+        loadComponent: () => import('./pages/calidad/encuestas/encuestas').then((m) => m.Encuestas),
+        canActivate: [permissionGuard(Permisos.EncuestasCalidad)],
+      },
+      {
         path: 'usuarios',
         title: 'Usuarios · SiGAV',
         loadComponent: () => import('./pages/usuarios/usuarios').then((m) => m.Usuarios),

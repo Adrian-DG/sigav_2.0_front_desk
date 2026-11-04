@@ -1,0 +1,224 @@
+<app-module-page
+  titulo="Encuestas de calidad"
+  descripcion="Para cambiar las preguntas cree una nueva versión, edítela y publíquela. Las evaluaciones anteriores conservan su versión."
+  icono="encuesta"
+>
+  <a
+    *hasPermission="permisoCalidad"
+    moduloAcciones
+    routerLink="/calidad"
+    class="inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-base font-bold text-primary-600 hover:bg-primary-50"
+  >
+    <app-icon name="calidad" class="h-4 w-4" /> Bandeja de calidad
+  </a>
+  <app-button moduloAcciones [bloque]="false" [disabled]="hayBorrador()" [loading]="ocupado() && !esBorrador()" (click)="nuevaVersion()">
+    <app-icon name="agregar" class="h-4 w-4" /> Nueva versión
+  </app-button>
+
+  <div class="grid gap-6 lg:grid-cols-[18rem_1fr]">
+    <!-- Versiones -->
+    <aside class="h-fit overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
+      <app-estado-lista
+        [cargando]="versiones.isLoading()"
+        [error]="errorLista()"
+        [hayDatos]="lista().length > 0"
+        tituloVacio="Sin encuestas"
+        textoVacio="Cree la primera versión con «Nueva versión»."
+        (reintentar)="versiones.reload()"
+      >
+        <ul class="divide-y divide-neutral-100">
+          @for (v of lista(); track v.id) {
+            <li>
+              <button type="button" class="flex w-full flex-col gap-1 px-4 py-3 text-left hover:bg-neutral-50"
+                [class.bg-primary-50]="seleccionada() === v.id" [attr.aria-current]="seleccionada() === v.id"
+                (click)="seleccionada.set(v.id)">
+                <span class="flex items-center justify-between gap-2">
+                  <span class="font-bold">Versión {{ v.version }}</span>
+                  <app-badge [tono]="ESTADO[v.estado].tono">{{ ESTADO[v.estado].label }}</app-badge>
+                </span>
+                <span class="text-xs text-neutral-500">
+                  {{ v.totalPreguntas }} preguntas · {{ v.totalEvaluaciones }} evaluaciones
+                  @if (v.publicada) { · desde {{ fecha(v.publicada) }} }
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      </app-estado-lista>
+    </aside>
+
+    <!-- Detalle / editor -->
+    <section class="min-w-0 rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
+      @if (!encuesta() || !form()) {
+        <p class="py-10 text-center text-sm text-neutral-500">
+          {{ detalle.isLoading() ? 'Cargando…' : 'Seleccione una versión.' }}
+        </p>
+      } @else {
+        @let e = encuesta()!;
+        @let f = form()!;
+
+        <header class="mb-5 flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            @if (esBorrador()) {
+              <label class="flex flex-col gap-1.5">
+                <span class="text-sm font-semibold text-neutral-600">Nombre de la encuesta</span>
+                <input class="control text-lg font-bold" maxlength="100" [value]="f.nombre" [disabled]="ocupado()"
+                  (input)="cambiarNombre($any($event.target).value)" />
+              </label>
+            } @else {
+              <h2 class="text-lg font-extrabold">{{ e.nombre }}</h2>
+            }
+            <p class="mt-1 flex items-center gap-2 text-sm text-neutral-500">
+              Versión {{ e.version }} <app-badge [tono]="ESTADO[e.estado].tono">{{ ESTADO[e.estado].label }}</app-badge>
+              @if (e.publicada) { · publicada {{ fecha(e.publicada) }} }
+              @if (e.retirada) { · retirada {{ fecha(e.retirada) }} }
+            </p>
+          </div>
+        </header>
+
+        @if (!esBorrador()) {
+          <p class="mb-4 rounded-xl bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
+            Una versión publicada no se modifica. Para cambiar preguntas use «Nueva versión»: se copiará la vigente como borrador.
+          </p>
+        }
+
+        <ol class="flex flex-col gap-4">
+          @for (p of f.preguntas; track p.clave; let i = $index, primero = $first, ultimo = $last) {
+            <li class="rounded-xl border border-neutral-200 p-4">
+              @if (esBorrador()) {
+                <fieldset class="flex flex-col gap-3" [disabled]="ocupado()">
+                  <div class="flex items-start gap-2">
+                    <span class="mt-2.5 w-6 shrink-0 text-sm font-bold text-neutral-500">{{ i + 1 }}.</span>
+                    <textarea class="control min-h-11 flex-1" rows="2" maxlength="300" placeholder="Texto de la pregunta"
+                      [value]="p.texto" (input)="cambiarPregunta(i, { texto: $any($event.target).value })"></textarea>
+                    <div class="flex shrink-0 flex-col">
+                      <button type="button" class="rounded p-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30"
+                        aria-label="Subir pregunta" [disabled]="primero" (click)="moverPregunta(i, -1)">
+                        <app-icon name="subir" class="h-4 w-4" />
+                      </button>
+                      <button type="button" class="rounded p-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30"
+                        aria-label="Bajar pregunta" [disabled]="ultimo" (click)="moverPregunta(i, 1)">
+                        <app-icon name="bajar" class="h-4 w-4" />
+                      </button>
+                    </div>
+                    <button type="button" class="rounded p-1.5 text-danger-600 hover:bg-danger-50" aria-label="Quitar pregunta"
+                      (click)="quitarPregunta(i)">
+                      <app-icon name="eliminar" class="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div class="flex flex-wrap items-center gap-4 pl-8">
+                    <label class="flex items-center gap-2 text-sm">
+                      <span class="font-semibold text-neutral-600">Tipo</span>
+                      <select class="control" (change)="cambiarTipo(i, $any($event.target).value)">
+                        @for (t of tipos; track t.valor) {
+                          <option [value]="t.valor" [selected]="p.tipo === t.valor">{{ t.label }}</option>
+                        }
+                      </select>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-semibold text-neutral-600">
+                      <input type="checkbox" class="h-4 w-4 accent-primary-500" [checked]="p.obligatoria"
+                        (change)="cambiarPregunta(i, { obligatoria: $any($event.target).checked })" /> Obligatoria
+                    </label>
+                    @if (p.tipo !== 4) {
+                      <label class="flex items-center gap-2 text-sm font-semibold text-neutral-600">
+                        <input type="checkbox" class="h-4 w-4 accent-primary-500" [checked]="p.permiteComentario"
+                          (change)="cambiarPregunta(i, { permiteComentario: $any($event.target).checked })" /> Admite comentario
+                      </label>
+                    }
+                    <span class="text-xs text-neutral-500">{{ TIPO[p.tipo].ayuda }}</span>
+                  </div>
+
+                  @if (usaOpciones(p.tipo)) {
+                    <div class="flex flex-col gap-2 pl-8">
+                      @for (o of p.opciones; track $index; let j = $index) {
+                        <div class="flex items-center gap-2">
+                          <span class="w-8 text-right font-mono text-sm text-neutral-500">{{ o.valor }}</span>
+                          <input class="control flex-1" maxlength="60" placeholder="Etiqueta" [value]="o.etiqueta"
+                            (input)="cambiarOpcion(i, j, $any($event.target).value)" />
+                          <button type="button" class="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 disabled:opacity-30"
+                            aria-label="Quitar opción" [disabled]="p.opciones.length <= 2" (click)="quitarOpcion(i, j)">
+                            <app-icon name="limpiar" class="h-4 w-4" />
+                          </button>
+                        </div>
+                      }
+                      @if (p.opciones.length < maxOpciones) {
+                        <button type="button" class="self-start rounded-lg px-2 py-1 text-sm font-bold text-primary-600 hover:bg-primary-50"
+                          (click)="agregarOpcion(i)">+ Opción</button>
+                      }
+                      @if (p.tipo === 1) {
+                        <p class="text-xs text-neutral-500">En una escala, de peor (valor menor) a mejor.</p>
+                      }
+                    </div>
+                  }
+                </fieldset>
+              } @else {
+                <p class="font-semibold">
+                  {{ i + 1 }}. {{ p.texto }}
+                  @if (p.obligatoria) { <span class="text-danger-600">*</span> }
+                </p>
+                <p class="mt-1 text-xs text-neutral-500">
+                  {{ TIPO[p.tipo].label }}
+                  @if (p.permiteComentario) { · admite comentario }
+                </p>
+                @if (p.opciones.length) {
+                  <div class="mt-2 flex flex-wrap gap-1.5">
+                    @for (o of p.opciones; track o.valor) {
+                      <app-badge tono="neutral">{{ o.valor }} · {{ o.etiqueta }}</app-badge>
+                    }
+                  </div>
+                }
+              }
+            </li>
+          } @empty {
+            <li class="rounded-xl border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-500">
+              Sin preguntas.
+            </li>
+          }
+        </ol>
+
+        @if (esBorrador()) {
+          @if (f.preguntas.length < maxPreguntas) {
+            <button type="button" class="mt-4 rounded-lg px-3 py-2 text-sm font-bold text-primary-600 hover:bg-primary-50"
+              [disabled]="ocupado()" (click)="agregarPregunta()">+ Agregar pregunta</button>
+          }
+
+          @if (error(); as msg) {
+            <p class="mt-4 rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-700" role="alert">{{ msg }}</p>
+          }
+
+          @if (confirmandoPublicar()) {
+            <div class="mt-6 rounded-xl border border-secondary-200 bg-secondary-50 p-4 text-sm" role="alertdialog">
+              <p class="font-bold">¿Publicar la versión {{ e.version }}?</p>
+              <p class="mt-1 text-neutral-600">Las evaluaciones nuevas la usarán y la versión vigente quedará retirada. Ya no podrá editarse.</p>
+              <div class="mt-3 flex justify-end gap-2">
+                <app-button variant="ghost" [bloque]="false" (click)="confirmandoPublicar.set(false)">Cancelar</app-button>
+                <app-button variant="secondary" [bloque]="false" [loading]="ocupado()" (click)="publicar()">Publicar</app-button>
+              </div>
+            </div>
+          } @else if (confirmandoDescartar()) {
+            <div class="mt-6 rounded-xl border border-danger-200 bg-danger-50 p-4 text-sm" role="alertdialog">
+              <p class="font-bold">¿Descartar el borrador?</p>
+              <p class="mt-1 text-neutral-600">Se perderán sus preguntas. La versión vigente no cambia.</p>
+              <div class="mt-3 flex justify-end gap-2">
+                <app-button variant="ghost" [bloque]="false" (click)="confirmandoDescartar.set(false)">Cancelar</app-button>
+                <app-button variant="danger" [bloque]="false" [loading]="ocupado()" (click)="descartar()">Descartar</app-button>
+              </div>
+            </div>
+          } @else {
+            <div class="mt-6 flex flex-wrap justify-end gap-2 border-t border-neutral-100 pt-4">
+              <app-button variant="ghost" [bloque]="false" [disabled]="ocupado()" (click)="confirmandoDescartar.set(true)">Descartar borrador</app-button>
+              @if (sucio()) {
+                <app-button variant="ghost" [bloque]="false" [disabled]="ocupado()" (click)="deshacerCambios()">Deshacer cambios</app-button>
+              }
+              <app-button variant="ghost" [bloque]="false" [disabled]="!sucio()" [loading]="ocupado()" (click)="guardar()">Guardar borrador</app-button>
+              <app-button variant="secondary" [bloque]="false" [disabled]="ocupado() || f.preguntas.length === 0" (click)="confirmandoPublicar.set(true)">
+                Publicar versión
+              </app-button>
+            </div>
+          }
+        }
+      }
+    </section>
+  </div>
+</app-module-page>

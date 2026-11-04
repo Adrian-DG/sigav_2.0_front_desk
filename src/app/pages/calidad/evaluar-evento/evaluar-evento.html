@@ -1,0 +1,244 @@
+<app-dialogo
+  #dialogo
+  [abierto]="eventoId() !== null"
+  ancho="amplio"
+  [titulo]="'Evaluación de calidad · Evento #' + (eventoId() ?? '')"
+  [descripcion]="vm() ? vm()!.evento.tipos.join(', ') + ' · ' + fechaHora(vm()!.evento.fechaHoraReporte) : ''"
+  [sucio]="sucio()"
+  [ocupado]="ocupado()"
+  (cerrar)="alCerrar()"
+>
+  @if (errorCarga(); as e) {
+    <p class="rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-700" role="alert">{{ e }}</p>
+  } @else if (!vm()) {
+    <p class="py-10 text-center text-sm text-neutral-500">Cargando…</p>
+  } @else {
+    @let ev = vm()!.evento;
+    @let evaluacion = vm()!.evaluacion;
+
+    <div class="flex flex-col gap-6">
+      <!-- Resumen del evento -->
+      <section class="grid gap-x-6 gap-y-2 rounded-2xl bg-neutral-50 p-4 text-sm sm:grid-cols-2">
+        <p><span class="font-semibold text-neutral-500">Unidad:</span> {{ ev.unidadFicha }} · {{ ev.unidadDenominacion }}</p>
+        <p><span class="font-semibold text-neutral-500">Cierre:</span> {{ ev.tipoCierre ?? '—' }}
+          @if (ev.fechaHoraCompletado) { · {{ fechaHora(ev.fechaHoraCompletado) }} }</p>
+        <p class="sm:col-span-2"><span class="font-semibold text-neutral-500">Lugar:</span>
+          {{ lugar() }}
+          @if (ev.tramo) { · {{ ev.tramo }} }</p>
+        @if (ev.comentario) {
+          <p class="sm:col-span-2"><span class="font-semibold text-neutral-500">Comentario:</span> {{ ev.comentario }}</p>
+        }
+        @if (evaluacion) {
+          <p class="flex items-center gap-2 sm:col-span-2">
+            <span class="font-semibold text-neutral-500">Evaluación:</span>
+            <app-badge [tono]="ESTADO[evaluacion.estado].tono">{{ ESTADO[evaluacion.estado].label }}</app-badge>
+            <span class="text-xs text-neutral-500">
+              iniciada por {{ evaluacion.creadaPor ?? '—' }} el {{ fechaHora(evaluacion.creada) }}
+              @if (evaluacion.cerrada) { · cerrada por {{ evaluacion.cerradaPor ?? '—' }} el {{ fechaHora(evaluacion.cerrada) }} }
+            </span>
+          </p>
+        }
+      </section>
+
+      <!-- 1. Contacto -->
+      <section class="flex flex-col gap-3">
+        <h3 class="text-xs font-bold tracking-wider text-neutral-500 uppercase">1. A quién contactar</h3>
+
+        @if (evaluacion && !editandoContacto()) {
+          <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 px-4 py-3">
+            <div>
+              <p class="font-bold">{{ evaluacion.nombreContacto ?? 'Contacto sin nombre' }}</p>
+              <a class="font-mono text-primary-600 hover:underline" [href]="'tel:' + evaluacion.telefonoContacto">{{ evaluacion.telefonoContacto }}</a>
+              <span class="ml-2 text-xs text-neutral-500">por {{ CANAL[evaluacion.canal] }}</span>
+            </div>
+            @if (enGestion()) {
+              <button type="button" class="rounded-lg px-3 py-1.5 text-sm font-bold text-primary-600 hover:bg-primary-50"
+                (click)="editandoContacto.set(true)">Cambiar contacto</button>
+            }
+          </div>
+        } @else {
+          <fieldset class="flex flex-col gap-2" [disabled]="ocupado()">
+            @for (p of ev.personas; track p.eventoCiudadanoId) {
+              <label class="flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5"
+                [class]="contacto() === p.eventoCiudadanoId ? 'border-primary-400 bg-primary-50' : 'border-neutral-200'">
+                <input type="radio" name="contacto" class="accent-primary-500" [checked]="contacto() === p.eventoCiudadanoId"
+                  (change)="contacto.set(p.eventoCiudadanoId)" />
+                <span class="flex-1">
+                  <span class="font-semibold">{{ p.nombre || p.identificacion || 'Persona no identificada' }}</span>
+                  <span class="ml-2 text-xs text-neutral-500">{{ ROL[p.rol] }}</span>
+                </span>
+                <span class="font-mono text-sm" [class.text-danger-700]="!p.telefono">{{ p.telefono ?? 'Sin teléfono' }}</span>
+              </label>
+            }
+            <label class="flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5"
+              [class]="contacto() === 'otro' ? 'border-primary-400 bg-primary-50' : 'border-neutral-200'">
+              <input type="radio" name="contacto" class="accent-primary-500" [checked]="contacto() === 'otro'" (change)="contacto.set('otro')" />
+              <span class="font-semibold">Otro contacto (familiar, acompañante…)</span>
+            </label>
+
+            @if (pideTelefono()) {
+              <div class="grid gap-3 sm:grid-cols-2">
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-sm font-semibold text-neutral-600">Teléfono</span>
+                  <input class="control" inputmode="tel" autocomplete="off" placeholder="809-555-0101" [value]="telefono()"
+                    (input)="telefono.set($any($event.target).value)" />
+                </label>
+                @if (contacto() === 'otro') {
+                  <label class="flex flex-col gap-1.5">
+                    <span class="text-sm font-semibold text-neutral-600">Nombre (opcional)</span>
+                    <input class="control" autocomplete="off" [value]="nombreContacto()" (input)="nombreContacto.set($any($event.target).value)" />
+                  </label>
+                }
+              </div>
+            }
+
+            <div class="flex flex-wrap justify-end gap-2">
+              @if (evaluacion) {
+                <app-button variant="ghost" [bloque]="false" (click)="editandoContacto.set(false)">Cancelar</app-button>
+                <app-button [bloque]="false" [loading]="ocupado()" (click)="guardarContacto()">Guardar contacto</app-button>
+              } @else if (vm()!.encuesta) {
+                <app-button [bloque]="false" [loading]="ocupado()" (click)="iniciar()">
+                  Iniciar evaluación
+                </app-button>
+              } @else {
+                <p class="text-sm text-danger-700">No hay una encuesta publicada: pida a quien administra las encuestas que publique una.</p>
+              }
+            </div>
+          </fieldset>
+        }
+      </section>
+
+      @if (evaluacion) {
+        <!-- 2. Intentos -->
+        <section class="flex flex-col gap-3">
+          <h3 class="text-xs font-bold tracking-wider text-neutral-500 uppercase">2. Intentos de contacto</h3>
+          @if (evaluacion.intentos.length) {
+            <ol class="flex flex-col divide-y divide-neutral-100 rounded-xl border border-neutral-200">
+              @for (i of evaluacion.intentos; track $index) {
+                <li class="flex flex-wrap items-baseline justify-between gap-2 px-4 py-2 text-sm">
+                  <span>
+                    <span class="font-bold" [class.text-secondary-700]="i.resultado === 1">{{ RESULTADO[i.resultado] }}</span>
+                    @if (i.observacion) { <span class="text-neutral-600"> · {{ i.observacion }}</span> }
+                  </span>
+                  <span class="text-xs text-neutral-500">{{ CANAL[i.canal] }} · {{ fechaHora(i.fecha) }} · {{ i.usuario ?? '—' }}</span>
+                </li>
+              }
+            </ol>
+          } @else {
+            <p class="text-sm text-neutral-500">Llame al {{ evaluacion.telefonoContacto }} y registre el resultado.</p>
+          }
+
+          @if (enGestion() && !contesto()) {
+            <fieldset class="grid gap-3 sm:grid-cols-[14rem_1fr_auto] sm:items-end" [disabled]="ocupado()">
+              <label class="flex flex-col gap-1.5">
+                <span class="text-sm font-semibold text-neutral-600">Resultado de la llamada</span>
+                <select class="control" (change)="elegirResultado($any($event.target).value)">
+                  <option value="" [selected]="resultado() === null">Seleccione…</option>
+                  @for (r of resultadosLlamada; track r) {
+                    <option [value]="r" [selected]="resultado() === r">{{ RESULTADO[r] }}</option>
+                  }
+                </select>
+              </label>
+              <label class="flex flex-col gap-1.5">
+                <span class="text-sm font-semibold text-neutral-600">Observación (opcional)</span>
+                <input class="control" autocomplete="off" maxlength="500" [value]="observacionIntento()"
+                  (input)="observacionIntento.set($any($event.target).value)" />
+              </label>
+              <app-button [bloque]="false" [loading]="ocupado()" (click)="registrarIntento()">Registrar</app-button>
+            </fieldset>
+          }
+
+          @if (puedeCerrarSinContacto()) {
+            <div class="flex flex-wrap items-end gap-3 rounded-xl bg-neutral-50 p-3">
+              <label class="flex min-w-60 flex-1 flex-col gap-1.5">
+                <span class="text-sm font-semibold text-neutral-600">¿No se logró contactar? Observación</span>
+                <input class="control" autocomplete="off" maxlength="500" [value]="observacionCierre()"
+                  (input)="observacionCierre.set($any($event.target).value)" />
+              </label>
+              <app-button variant="danger" [bloque]="false" [loading]="ocupado()" (click)="marcarNoContactado()">
+                Cerrar como no contactado
+              </app-button>
+            </div>
+          }
+        </section>
+
+        <!-- 3. Encuesta -->
+        @if (vm()!.encuesta; as encuesta) {
+          <section class="flex flex-col gap-4">
+            <h3 class="text-xs font-bold tracking-wider text-neutral-500 uppercase">
+              3. Encuesta · {{ encuesta.nombre }} (v{{ encuesta.version }})
+            </h3>
+            @if (enGestion() && !contesto()) {
+              <p class="rounded-xl bg-warning-50 px-4 py-3 text-sm text-warning-900">
+                Registre el intento en que el ciudadano contestó para tomar la encuesta.
+              </p>
+            }
+
+            @if (puedeResponder() || evaluacion.respuestas.length) {
+              @for (p of encuesta.preguntas; track p.id) {
+                @let r = respuesta(p);
+                <div class="flex flex-col gap-2 rounded-xl border border-neutral-200 p-4">
+                  <p class="font-semibold text-neutral-900">
+                    {{ p.orden }}. {{ p.texto }}
+                    @if (p.obligatoria) { <span class="text-danger-600" aria-label="obligatoria">*</span> }
+                  </p>
+
+                  @if (p.tipo === TipoPregunta.Texto) {
+                    <textarea class="control min-h-20" maxlength="1000" [disabled]="!puedeResponder() || ocupado()"
+                      [value]="r.texto" (input)="cambiar(p, { texto: $any($event.target).value })"></textarea>
+                  } @else {
+                    <div class="flex flex-wrap gap-2" role="radiogroup" [attr.aria-label]="p.texto">
+                      @for (o of opciones(p); track o.valor) {
+                        <button type="button" role="radio" [attr.aria-checked]="r.valor === o.valor"
+                          class="rounded-xl border px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-default"
+                          [class]="r.valor === o.valor ? 'border-primary-500 bg-primary-500 text-white' : 'border-neutral-200 text-neutral-700 enabled:hover:bg-neutral-50'"
+                          [disabled]="!puedeResponder() || ocupado()" (click)="elegir(p, o.valor)">
+                          @if (p.tipo === TipoPregunta.Escala) { {{ o.valor }} · }{{ o.etiqueta }}
+                        </button>
+                      }
+                    </div>
+                  }
+
+                  @if (p.permiteComentario && (puedeResponder() || r.comentario)) {
+                    <input class="control text-sm" placeholder="Comentario (opcional)" maxlength="500"
+                      [disabled]="!puedeResponder() || ocupado() || !respondida(p)" [value]="r.comentario"
+                      (input)="cambiar(p, { comentario: $any($event.target).value })" />
+                  }
+                </div>
+              }
+
+              @if (puedeResponder()) {
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-sm font-semibold text-neutral-600">Observación general (opcional)</span>
+                  <textarea class="control min-h-16" maxlength="500" [value]="observacionCierre()"
+                    (input)="observacionCierre.set($any($event.target).value)"></textarea>
+                </label>
+              } @else if (evaluacion.observacion) {
+                <p class="text-sm"><span class="font-semibold text-neutral-500">Observación:</span> {{ evaluacion.observacion }}</p>
+              }
+            } @else if (!enGestion()) {
+              <p class="text-sm text-neutral-500">Sin respuestas{{ evaluacion.observacion ? ': ' + evaluacion.observacion : '.' }}</p>
+            }
+          </section>
+        }
+      }
+
+      @if (errorAccion(); as e) {
+        <p class="rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-700" role="alert">{{ e }}</p>
+      }
+    </div>
+  }
+
+  <div dialogoAcciones class="contents">
+    <app-button variant="ghost" [bloque]="false" [disabled]="ocupado()" (click)="dialogo.solicitarCierre()">Cerrar</app-button>
+    @if (evaluacion() && !enGestion()) {
+      <app-button variant="ghost" [bloque]="false" [loading]="ocupado()" (click)="reabrir()">Reabrir</app-button>
+    }
+    @if (puedeResponder()) {
+      <app-button variant="ghost" [bloque]="false" [loading]="ocupado()" [disabled]="!sucio()" (click)="guardar(false)">
+        Guardar avance
+      </app-button>
+      <app-button [bloque]="false" [loading]="ocupado()" (click)="guardar(true)">Completar encuesta</app-button>
+    }
+  </div>
+</app-dialogo>
