@@ -6,7 +6,9 @@
   <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="agentes.isLoading()" (click)="agentes.reload()">
     <app-icon name="actualizar" class="h-4 w-4" /> Actualizar
   </app-button>
-  <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirImportacion()">Cargar Excel</app-button>
+  @if (puedeGestionar()) {
+    <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirImportacion()">Cargar Excel</app-button>
+  }
 
   <div moduloFiltros class="contents">
     <app-filtro etiqueta="Buscar" class="w-full sm:w-72">
@@ -103,6 +105,10 @@
                   <td class="min-w-44">
                     @if (!agente.isActive) {
                       <app-badge tono="neutral">Inactivo</app-badge>
+                    } @else if (!puedeGestionar()) {
+                      <span class="text-sm font-semibold" [class]="agente.autorizado ? 'text-secondary-700' : 'text-warning-800'">
+                        {{ agente.autorizado ? 'Autorizado' : 'Sin autorizar' }}
+                      </span>
                     } @else {
                       <!-- Interruptor: autoriza o quita el acceso de inmediato -->
                       <button
@@ -134,7 +140,7 @@
                   </td>
                   <td class="whitespace-nowrap">{{ fecha(agente.createdAt) }}</td>
                   <td class="text-right">
-                    @if (agente.isActive) {
+                    @if (agente.isActive && puedeGestionar()) {
                       <button
                         type="button"
                         class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold whitespace-nowrap text-primary-600 hover:bg-primary-50"

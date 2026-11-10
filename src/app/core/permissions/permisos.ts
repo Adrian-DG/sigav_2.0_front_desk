@@ -9,6 +9,7 @@ export const Permisos = {
   AsignarEventos: 'eventos.asignar',
   NotificarUnidades: 'unidades.notificar',
   Agentes: 'agentes.ver',
+  GestionarAgentes: 'agentes.gestionar',
   UnidadesDenominacion: 'unidades.ver',
   Usuarios: 'usuarios.gestionar',
   Calidad: 'calidad.evaluar',

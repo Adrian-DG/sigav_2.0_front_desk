@@ -2,6 +2,8 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
 
 import { environment } from '../../../environments/environment';
+import { Permisos } from '../../core/permissions/permisos';
+import { AuthService } from '../../core/services/auth.service';
 import { AvisosService } from '../../core/services/avisos.service';
 import { INSTITUCIONES } from '../../core/models/catalogos';
 import type { PagedResult } from '../../core/models/paged-result';
@@ -51,6 +53,10 @@ type Autorizacion = 'todos' | 'autorizados' | 'pendientes';
 })
 export class Agentes {
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
+
+  /** Alta, edición, autorización, desactivación e importación (agentes.gestionar); sin él, solo consulta. */
+  protected readonly puedeGestionar = computed(() => this.auth.permisos().includes(Permisos.GestionarAgentes));
 
   protected readonly areas = Object.entries(AREAS_OPERATIVAS).map(([valor, label]) => ({ valor: Number(valor), label }));
   protected readonly AREA = AREAS_OPERATIVAS;
