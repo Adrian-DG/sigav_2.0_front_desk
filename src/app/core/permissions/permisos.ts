@@ -11,6 +11,7 @@ export const Permisos = {
   Agentes: 'agentes.ver',
   GestionarAgentes: 'agentes.gestionar',
   UnidadesDenominacion: 'unidades.ver',
+  GestionarZonas: 'zonas.gestionar',
   Usuarios: 'usuarios.gestionar',
   Calidad: 'calidad.evaluar',
   EncuestasCalidad: 'calidad.encuestas',

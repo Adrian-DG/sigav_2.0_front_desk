@@ -58,7 +58,9 @@ export class Alta {
   protected readonly erroresApi = signal<Record<string, string>>({});
   protected readonly errorGeneral = signal<string | null>(null);
 
-  protected readonly opcionesTramo = computed<OpcionSelector[]>(() => this.opciones()?.tramos ?? []);
+  protected readonly opcionesTramo = computed<OpcionSelector[]>(() =>
+    (this.opciones()?.tramos ?? []).map((t) => ({ id: t.id, nombre: t.nombre, detalle: t.zona })),
+  );
 
   protected readonly errores = computed(() => {
     const e: Partial<Record<Campo, string>> = {};

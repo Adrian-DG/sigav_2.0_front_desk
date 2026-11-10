@@ -86,7 +86,9 @@ export class AsignarDenominacion {
       detalle: `${d.nivelDenominacion} · ${d.tramo} · ${d.unidadFicha ? 'En uso por ' + d.unidadFicha : 'Libre'}`,
     })),
   );
-  protected readonly opcionesTramo = computed<OpcionSelector[]>(() => this.opciones()?.tramos ?? []);
+  protected readonly opcionesTramo = computed<OpcionSelector[]>(() =>
+    (this.opciones()?.tramos ?? []).map((t) => ({ id: t.id, nombre: t.nombre, detalle: t.zona })),
+  );
 
   private readonly unidad = computed(() => {
     const f = this.form();

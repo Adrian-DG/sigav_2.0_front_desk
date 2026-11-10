@@ -48,7 +48,8 @@ export type OpcionesAsignacion = {
     unidadId: number | null;
     unidadFicha: string | null;
   }[];
-  tramos: { id: number; nombre: string }[];
+  /** zona: la del tramo, para distinguirlo en el selector. */
+  tramos: { id: number; nombre: string; zona: string }[];
   niveles: { id: number; nombre: string; jerarquia: number }[];
 };
 

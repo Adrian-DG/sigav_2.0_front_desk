@@ -44,6 +44,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permiso: Permisos.UnidadesDenominacion,
   },
   {
+    label: 'Zonas y tramos',
+    path: '/zonas',
+    icon: 'zonas',
+    descripcion: 'Zonas de cada región y sus tramos, que se asignan a las denominaciones',
+    permiso: Permisos.UnidadesDenominacion,
+  },
+  {
     label: 'Mapa de unidades',
     path: '/unidades-mapa',
     icon: 'ubicacion',
