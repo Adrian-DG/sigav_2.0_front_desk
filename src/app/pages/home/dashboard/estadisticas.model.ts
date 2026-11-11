@@ -13,9 +13,9 @@ export type UnidadEstadistica = { unidadId: number; ficha: string; denominacionI
 
 export type TramoEstadistica = { tramoId: number; tramo: string; resumen: Resumen; unidades: UnidadEstadistica[] };
 
-export type RegionEstadistica = {
-  regionAsistenciaId: number;
-  region: string;
+export type ZonaEstadistica = {
+  zonaId: number;
+  zona: string;
   regionMacro: number;
   resumen: Resumen;
   tramos: TramoEstadistica[];
@@ -25,7 +25,7 @@ export type Estadisticas = {
   desde: string;
   hasta: string;
   resumen: Resumen;
-  regiones: RegionEstadistica[];
+  zonas: ZonaEstadistica[];
 };
 
 /** Domain/Enums RegionMacroEnum. */

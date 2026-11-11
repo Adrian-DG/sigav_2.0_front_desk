@@ -53,10 +53,34 @@ export const routes: Routes = [
         canActivate: [permissionGuard(Permisos.UnidadesDenominacion)],
       },
       {
+        path: 'zonas',
+        title: 'Zonas y tramos · SiGAV',
+        loadComponent: () => import('./pages/zonas/zonas').then((m) => m.Zonas),
+        canActivate: [permissionGuard(Permisos.UnidadesDenominacion)],
+      },
+      {
         path: 'unidades-mapa',
         title: 'Mapa de unidades · SiGAV',
         loadComponent: () => import('./pages/unidades-mapa/unidades-mapa').then((m) => m.UnidadesMapa),
         canActivate: [permissionGuard(Permisos.UnidadesDenominacion)],
+      },
+      {
+        path: 'notificaciones',
+        title: 'Notificaciones · SiGAV',
+        loadComponent: () => import('./pages/notificaciones/notificaciones').then((m) => m.Notificaciones),
+        canActivate: [permissionGuard(Permisos.NotificarUnidades)],
+      },
+      {
+        path: 'calidad',
+        title: 'Calidad · SiGAV',
+        loadComponent: () => import('./pages/calidad/calidad').then((m) => m.Calidad),
+        canActivate: [permissionGuard(Permisos.Calidad)],
+      },
+      {
+        path: 'calidad/encuestas',
+        title: 'Encuestas de calidad · SiGAV',
+        loadComponent: () => import('./pages/calidad/encuestas/encuestas').then((m) => m.Encuestas),
+        canActivate: [permissionGuard(Permisos.EncuestasCalidad)],
       },
       {
         path: 'usuarios',

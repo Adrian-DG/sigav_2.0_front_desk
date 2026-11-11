@@ -1,16 +1,12 @@
-<app-module-page
-  titulo="Unidades y denominaciones"
-  descripcion="Fichas de las unidades, la denominación que usan y los tramos que cubren."
-  icono="unidades"
->
+<app-module-page titulo="Unidades y denominaciones"
+  descripcion="Fichas de las unidades, la denominación que usan y los tramos que cubren." icono="unidades">
   <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="cargando()" (click)="recargar()">
     <app-icon name="actualizar" class="h-4 w-4" /> Actualizar
   </app-button>
-  @if (puedeGestionarZonas()) {
-    <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirZona()">+ Zona</app-button>
-  }
+  <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirImportacion()">Cargar Excel</app-button>
   <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirAlta('unidad')">+ Unidad</app-button>
-  <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirAlta('denominacion')">+ Denominación</app-button>
+  <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirAlta('denominacion')">+
+    Denominación</app-button>
   <app-button moduloAcciones [bloque]="false" (click)="abrirAsignacion()">Asignar denominación</app-button>
 
   <div moduloFiltros class="contents">
@@ -18,185 +14,155 @@
       <span class="text-xs font-bold tracking-wide text-neutral-500 uppercase">Ver</span>
       <div class="inline-flex min-h-10 rounded-xl bg-neutral-100 p-1" role="tablist" aria-label="Listado">
         @for (v of vistas; track v.valor) {
-          <button
-            type="button"
-            role="tab"
-            [attr.aria-selected]="vista() === v.valor"
-            class="rounded-lg px-4 text-sm font-bold transition-colors"
-            [class]="vista() === v.valor ? 'bg-white text-primary-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'"
-            (click)="vista.set(v.valor)"
-          >
-            {{ v.label }}
-          </button>
+        <button type="button" role="tab" [attr.aria-selected]="vista() === v.valor"
+          class="rounded-lg px-4 text-sm font-bold transition-colors"
+          [class]="vista() === v.valor ? 'bg-white text-primary-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'"
+          (click)="vista.set(v.valor)">
+          {{ v.label }}
+        </button>
         }
       </div>
     </div>
     <app-filtro etiqueta="Buscar" class="w-full sm:w-80">
-      <app-busqueda
-        [placeholder]="vista() === 'unidades' ? 'Ficha, placa o denominación' : 'Nombre de la denominación'"
-        [(valor)]="busqueda"
-      />
+      <app-busqueda [placeholder]="vista() === 'unidades' ? 'Ficha, placa o denominación' : 'Nombre de la denominación'"
+        [(valor)]="busqueda" />
     </app-filtro>
   </div>
 
-  @if (aviso()) {
-    <div
-      class="mb-4 flex items-start justify-between gap-3 rounded-2xl border border-secondary-200 bg-secondary-50 px-4 py-3 text-sm font-semibold text-secondary-800"
-      role="status"
-    >
-      <span>{{ aviso() }}</span>
-      <button type="button" aria-label="Cerrar aviso" class="text-secondary-700 hover:text-secondary-900" (click)="aviso.set(null)">
-        <app-icon name="limpiar" class="h-4 w-4" />
-      </button>
-    </div>
-  }
 
   <div class="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
-    <app-estado-lista
-      [cargando]="cargando()"
-      [error]="error()"
-      [hayDatos]="hayDatos()"
+    <app-estado-lista [cargando]="cargando()" [error]="error()" [hayDatos]="hayDatos()"
       [tituloVacio]="vista() === 'unidades' ? 'No hay unidades' : 'No hay denominaciones'"
-      [textoVacio]="busqueda() ? 'Nada coincide con «' + busqueda() + '».' : undefined"
-      (reintentar)="recargar()"
-    >
+      [textoVacio]="busqueda() ? 'Nada coincide con «' + busqueda() + '».' : undefined" (reintentar)="recargar()">
       @if (vista() === 'unidades') {
-        @if (listaUnidades(); as r) {
-          <div class="overflow-x-auto">
-            <table class="tabla">
-              <thead>
-                <tr>
-                  <th>Ficha</th>
-                  <th>Placa</th>
-                  <th>Denominación</th>
-                  <th>Tramo</th>
-                  <th>Estado</th>
-                  <th><span class="sr-only">Acciones</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (unidad of r.items; track unidad.id) {
-                  <tr [class.opacity-60]="!unidad.isActive">
-                    <td class="font-bold whitespace-nowrap text-neutral-900">{{ unidad.ficha }}</td>
-                    <td class="font-mono whitespace-nowrap">{{ unidad.placa ?? '—' }}</td>
-                    <td class="min-w-56">
-                      @if (unidad.denominacion) {
-                        <p class="text-neutral-900">{{ unidad.denominacion }}</p>
-                        <p class="text-xs text-neutral-500">{{ unidad.nivelDenominacion }}</p>
-                      } @else {
-                        <span class="text-neutral-400">Sin denominación</span>
-                      }
-                    </td>
-                    <td class="min-w-48">{{ unidad.tramo || '—' }}</td>
-                    <td>
-                      @if (!unidad.isActive) {
-                        <app-badge tono="neutral">Inactiva</app-badge>
-                      } @else if (unidad.estaDisponible) {
-                        <app-badge tono="secondary">Disponible</app-badge>
-                      } @else {
-                        <app-badge tono="warning">No disponible</app-badge>
-                      }
-                    </td>
-                    <td class="text-right whitespace-nowrap">
-                      <button
-                        type="button"
-                        class="rounded-lg px-3 py-1.5 text-sm font-bold text-neutral-600 hover:bg-neutral-100"
-                        [attr.aria-label]="'Historial de ' + unidad.ficha"
-                        (click)="historialDe.set({ tipo: 'unidad', id: unidad.id, nombre: unidad.ficha })"
-                      >
-                        Historial
-                      </button>
-                      @if (unidad.isActive) {
-                        <button
-                          type="button"
-                          class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold whitespace-nowrap text-primary-600 hover:bg-primary-50"
-                          [attr.aria-label]="(unidad.denominacionId ? 'Cambiar la denominación de ' : 'Asignar denominación a ') + unidad.ficha"
-                          (click)="abrirAsignacion({ unidadId: unidad.id })"
-                        >
-                          <app-icon name="editar" class="h-4 w-4" />
-                          {{ unidad.denominacionId ? 'Cambiar denominación' : 'Asignar denominación' }}
-                        </button>
-                      }
-                    </td>
-                  </tr>
+      @if (listaUnidades(); as r) {
+      <div class="overflow-x-auto">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Ficha</th>
+              <th>Placa</th>
+              <th>Denominación</th>
+              <th>Tramo</th>
+              <th>Estado</th>
+              <th><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (unidad of r.items; track unidad.id) {
+            <tr [class.opacity-60]="!unidad.isActive">
+              <td class="font-bold whitespace-nowrap text-neutral-900">{{ unidad.ficha }}</td>
+              <td class="font-mono whitespace-nowrap">{{ unidad.placa ?? '—' }}</td>
+              <td class="min-w-56">
+                @if (unidad.denominacion) {
+                <p class="text-neutral-900">{{ unidad.denominacion }}</p>
+                <p class="text-xs text-neutral-500">{{ unidad.nivelDenominacion }}</p>
+                } @else {
+                <span class="text-neutral-400">Sin denominación</span>
                 }
-              </tbody>
-            </table>
-          </div>
-          <app-paginador [pagina]="pagina()" [tamano]="tamano" [total]="r.totalCount" (paginaChange)="pagina.set($event)" />
-        }
+              </td>
+              <td class="min-w-48">{{ unidad.tramo || '—' }}</td>
+              <td>
+                @if (!unidad.isActive) {
+                <app-badge tono="neutral">Inactiva</app-badge>
+                } @else if (unidad.estaDisponible) {
+                <app-badge tono="secondary">Disponible</app-badge>
+                } @else {
+                <app-badge tono="warning">No disponible</app-badge>
+                }
+              </td>
+              <td class="text-right whitespace-nowrap">
+                <button type="button"
+                  class="rounded-lg px-3 py-1.5 text-sm font-bold text-neutral-600 hover:bg-neutral-100"
+                  [attr.aria-label]="'Historial de ' + unidad.ficha"
+                  (click)="historialDe.set({ tipo: 'unidad', id: unidad.id, nombre: unidad.ficha })">
+                  Historial
+                </button>
+                @if (unidad.isActive) {
+                <button type="button"
+                  class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold whitespace-nowrap text-primary-600 hover:bg-primary-50"
+                  [attr.aria-label]="(unidad.denominacionId ? 'Cambiar la denominación de ' : 'Asignar denominación a ') + unidad.ficha"
+                  (click)="abrirAsignacion({ unidadId: unidad.id })">
+                  <app-icon name="editar" class="h-4 w-4" />
+                  {{ unidad.denominacionId ? 'Cambiar denominación' : 'Asignar denominación' }}
+                </button>
+                }
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-paginador [pagina]="pagina()" [tamano]="tamano" [total]="r.totalCount" (paginaChange)="pagina.set($event)" />
+      }
       } @else {
-        @if (listaDenominaciones(); as r) {
-          <div class="overflow-x-auto">
-            <table class="tabla">
-              <thead>
-                <tr>
-                  <th>Denominación</th>
-                  <th>Nivel</th>
-                  <th>Tramo</th>
-                  <th>Unidad</th>
-                  <th><span class="sr-only">Acciones</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (denominacion of r.items; track denominacion.id) {
-                  <tr>
-                    <td class="min-w-56 font-bold text-neutral-900">{{ denominacion.nombre }}</td>
-                    <td class="min-w-48">
-                      <div class="flex flex-wrap items-center gap-2">
-                        <span>{{ denominacion.nivelDenominacion }}</span>
-                        @if (JERARQUIA[denominacion.jerarquia]; as j) {
-                          <app-badge [tono]="j.tono">{{ j.label }}</app-badge>
-                        }
-                      </div>
-                    </td>
-                    <td class="min-w-48">{{ denominacion.tramo }}</td>
-                    <td class="whitespace-nowrap">
-                      @if (denominacion.unidadFicha) {
-                        <span class="font-bold text-neutral-900">{{ denominacion.unidadFicha }}</span>
-                      } @else {
-                        <app-badge tono="secondary">Libre</app-badge>
-                      }
-                    </td>
-                    <td class="text-right whitespace-nowrap">
-                      <button
-                        type="button"
-                        class="rounded-lg px-3 py-1.5 text-sm font-bold text-neutral-600 hover:bg-neutral-100"
-                        [attr.aria-label]="'Historial de ' + denominacion.nombre"
-                        (click)="historialDe.set({ tipo: 'denominacion', id: denominacion.id, nombre: denominacion.nombre })"
-                      >
-                        Historial
-                      </button>
-                      <button
-                        type="button"
-                        class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold whitespace-nowrap text-primary-600 hover:bg-primary-50"
-                        [attr.aria-label]="'Asignar ' + denominacion.nombre + ' a una unidad'"
-                        (click)="abrirAsignacion({ denominacionId: denominacion.id })"
-                      >
-                        <app-icon name="editar" class="h-4 w-4" /> Asignar a unidad
-                      </button>
-                    </td>
-                  </tr>
+      @if (listaDenominaciones(); as r) {
+      <div class="overflow-x-auto">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Denominación</th>
+              <th>Nivel</th>
+              <th>Tramo</th>
+              <th>Unidad</th>
+              <th><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (denominacion of r.items; track denominacion.id) {
+            <tr>
+              <td class="min-w-56 font-bold text-neutral-900">{{ denominacion.nombre }}</td>
+              <td class="min-w-48">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span>{{ denominacion.nivelDenominacion }}</span>
+                  @if (JERARQUIA[denominacion.jerarquia]; as j) {
+                  <app-badge [tono]="j.tono">{{ j.label }}</app-badge>
+                  }
+                </div>
+              </td>
+              <td class="min-w-48">{{ denominacion.tramo }}</td>
+              <td class="whitespace-nowrap">
+                @if (denominacion.unidadFicha) {
+                <span class="font-bold text-neutral-900">{{ denominacion.unidadFicha }}</span>
+                } @else {
+                <app-badge tono="secondary">Libre</app-badge>
                 }
-              </tbody>
-            </table>
-          </div>
-          <app-paginador [pagina]="pagina()" [tamano]="tamano" [total]="r.totalCount" (paginaChange)="pagina.set($event)" />
-        }
+              </td>
+              <td class="text-right whitespace-nowrap">
+                <button type="button"
+                  class="rounded-lg px-3 py-1.5 text-sm font-bold text-neutral-600 hover:bg-neutral-100"
+                  [attr.aria-label]="'Historial de ' + denominacion.nombre"
+                  (click)="historialDe.set({ tipo: 'denominacion', id: denominacion.id, nombre: denominacion.nombre })">
+                  Historial
+                </button>
+                <button type="button"
+                  class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold whitespace-nowrap text-primary-600 hover:bg-primary-50"
+                  [attr.aria-label]="'Asignar ' + denominacion.nombre + ' a una unidad'"
+                  (click)="abrirAsignacion({ denominacionId: denominacion.id })">
+                  <app-icon name="editar" class="h-4 w-4" /> Asignar a unidad
+                </button>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-paginador [pagina]="pagina()" [tamano]="tamano" [total]="r.totalCount" (paginaChange)="pagina.set($event)" />
+      }
       }
     </app-estado-lista>
   </div>
 </app-module-page>
 
-<app-asignar-denominacion
-  [inicio]="asignando()"
-  [opciones]="opcionesCargadas()"
-  (cerrar)="asignando.set(null)"
-  (asignado)="asignado($event)"
-/>
+<app-asignar-denominacion [inicio]="asignando()" [opciones]="opcionesCargadas()" (cerrar)="asignando.set(null)"
+  (asignado)="asignado($event)" />
 
 <app-alta [tipo]="alta()" [opciones]="opcionesCargadas()" (cerrar)="alta.set(null)" (creado)="creado($event)" />
 
-<app-nueva-zona [abierto]="creandoZona()" (cerrar)="creandoZona.set(false)" (creada)="zonaCreada($event)" />
+<<<<<<< HEAD <app-nueva-zona [abierto]="creandoZona()" (cerrar)="creandoZona.set(false)"
+  (creada)="zonaCreada($event)" />
+=======
+<app-importar [abierto]="importando()" (cerrar)="importando.set(false)" (importado)="importado($event)" />
+>>>>>>> a8f7e72accde3734c386d598cb9b4bec5fc81cac
 
 <app-historial [origen]="historialDe()" (cerrar)="historialDe.set(null)" />

@@ -1,8 +1,19 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
 
 import { environment } from '../../../../environments/environment';
 import { ApiError } from '../../../core/models/api-error';
+import { huella } from '../../../core/utils/huella';
 import { mensajeDeError } from '../../../core/utils/formato';
 import { Button } from '../../../shared/components/button/button';
 import { Dialogo, DialogoAcciones } from '../../../shared/components/dialogo/dialogo';
@@ -39,6 +50,15 @@ export class Alta {
   readonly tipo = input<TipoAlta | null>(null);
   readonly opciones = input<OpcionesAsignacion | undefined>();
   readonly cerrar = output();
+
+  private readonly dialogo = viewChild.required(Dialogo);
+  /** Contenido del formulario al abrirlo: si cambia, cerrar pide confirmación. */
+  private readonly huellaInicial = signal('');
+  protected readonly sucio = computed(
+    () =>
+      huella([this.ficha(), this.placa(), this.nombre(), this.tramoId(), this.nivelId()]) !==
+      this.huellaInicial(),
+  );
   /** Texto del aviso para el listado. */
   readonly creado = output<string>();
 
@@ -53,7 +73,9 @@ export class Alta {
   protected readonly erroresApi = signal<Record<string, string>>({});
   protected readonly errorGeneral = signal<string | null>(null);
 
-  protected readonly opcionesTramo = computed<OpcionSelector[]>(() => opcionesDeTramo(this.opciones()));
+  protected readonly opcionesTramo = computed<OpcionSelector[]>(() =>
+    (this.opciones()?.tramos ?? []).map((t) => ({ id: t.id, nombre: t.nombre, detalle: t.zona })),
+  );
 
   protected readonly errores = computed(() => {
     const e: Partial<Record<Campo, string>> = {};
@@ -80,6 +102,9 @@ export class Alta {
         this.nombre.set('');
         this.tramoId.set(null);
         this.nivelId.set('');
+        this.huellaInicial.set(
+          huella([this.ficha(), this.placa(), this.nombre(), this.tramoId(), this.nivelId()]),
+        );
         this.intentado.set(false);
         this.erroresApi.set({});
         this.errorGeneral.set(null);
@@ -88,7 +113,10 @@ export class Alta {
   }
 
   protected error(campo: Campo): string | null {
-    return this.erroresApi()[campo.toLowerCase()] ?? (this.intentado() ? (this.errores()[campo] ?? null) : null);
+    return (
+      this.erroresApi()[campo.toLowerCase()] ??
+      (this.intentado() ? (this.errores()[campo] ?? null) : null)
+    );
   }
 
   protected limpiarErroresApi(): void {
@@ -97,7 +125,7 @@ export class Alta {
   }
 
   protected cancelar(): void {
-    if (!this.guardando()) this.cerrar.emit();
+    this.dialogo().solicitarCierre();
   }
 
   protected guardar(): void {
@@ -108,7 +136,10 @@ export class Alta {
     const ficha = this.ficha().trim().toUpperCase();
     const nombre = this.nombre().trim();
     const peticion = esUnidad
-      ? this.http.post(`${environment.apiUrl}/unidades`, { ficha, placa: this.placa().trim().toUpperCase() || null })
+      ? this.http.post(`${environment.apiUrl}/unidades`, {
+          ficha,
+          placa: this.placa().trim().toUpperCase() || null,
+        })
       : this.http.post(`${environment.apiUrl}/denominaciones`, {
           nombre,
           tramoId: this.tramoId(),
@@ -130,7 +161,9 @@ export class Alta {
         this.guardando.set(false);
         const errores = erroresPorClave(error instanceof ApiError ? error.errors : null);
         this.erroresApi.set(errores);
-        const otros = Object.entries(errores).filter(([c]) => !CAMPOS.includes(c)).map(([, m]) => m);
+        const otros = Object.entries(errores)
+          .filter(([c]) => !CAMPOS.includes(c))
+          .map(([, m]) => m);
         if (otros.length) this.errorGeneral.set(otros.join(' '));
         else if (!Object.keys(errores).length) this.errorGeneral.set(mensajeDeError(error));
       },

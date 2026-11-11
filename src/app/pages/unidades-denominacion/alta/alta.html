@@ -6,7 +6,9 @@
       ? 'La unidad queda sin denominación (No disponible) hasta que se le asigne una.'
       : 'La denominación queda libre para asignarla después a una unidad.'
   "
-  (cerrar)="cancelar()"
+  [sucio]="sucio()"
+  [ocupado]="guardando()"
+  (cerrar)="cerrar.emit()"
 >
   <form class="flex flex-col gap-4" novalidate (submit)="$event.preventDefault(); guardar()">
     <fieldset class="flex flex-col gap-4" [disabled]="guardando()">

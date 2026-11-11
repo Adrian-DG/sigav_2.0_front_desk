@@ -1,0 +1,150 @@
+<app-module-page
+  titulo="Calidad"
+  descripcion="Contacte a los ciudadanos de los eventos completados y registre cómo califican el servicio."
+  icono="calidad"
+>
+  <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="bandeja.isLoading()" (click)="cambioEnEvaluacion()">
+    <app-icon name="actualizar" class="h-4 w-4" /> Actualizar
+  </app-button>
+  <a
+    *hasPermission="permisoEncuestas"
+    moduloAcciones
+    routerLink="/calidad/encuestas"
+    class="inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-base font-bold text-primary-600 hover:bg-primary-50"
+  >
+    <app-icon name="encuesta" class="h-4 w-4" /> Encuestas
+  </a>
+
+  <div moduloFiltros class="contents">
+    <app-filtro etiqueta="Estado" class="w-44">
+      <select class="control w-full" (change)="cambiarEstado($any($event.target).value)">
+        <option value="" [selected]="estado() === null">Todos</option>
+        @for (e of estados; track e.valor) {
+          <option [value]="e.valor" [selected]="estado() === e.valor">{{ e.label }}</option>
+        }
+      </select>
+    </app-filtro>
+    <app-filtro etiqueta="Desde">
+      <input type="date" class="control w-full" [value]="desde()" [max]="hasta() || null"
+        (change)="desde.set($any($event.target).value)" />
+    </app-filtro>
+    <app-filtro etiqueta="Hasta">
+      <input type="date" class="control w-full" [value]="hasta()" [min]="desde() || null"
+        (change)="hasta.set($any($event.target).value)" />
+    </app-filtro>
+    <app-filtro etiqueta="Ciudadano" class="w-full sm:w-64">
+      <app-busqueda placeholder="Cédula, nombre o teléfono" [(valor)]="busqueda" />
+    </app-filtro>
+    @if (hayFiltros()) {
+      <button type="button" class="min-h-10 rounded-xl px-3 text-sm font-bold text-primary-600 hover:bg-primary-50"
+        (click)="limpiarFiltros()">
+        Limpiar filtros
+      </button>
+    }
+    <div class="ml-auto flex items-end gap-2">
+      <app-filtro etiqueta="Versión a exportar" class="w-44">
+        <select class="control w-full" (change)="versionExportar.set($any($event.target).value ? +$any($event.target).value : null)">
+          <option value="" [selected]="versionExportar() === null">Vigente</option>
+          @for (v of versiones.value() ?? []; track v.id) {
+            @if (v.estado !== 1) {
+              <option [value]="v.id" [selected]="versionExportar() === v.id">v{{ v.version }} · {{ v.totalEvaluaciones }} eval.</option>
+            }
+          }
+        </select>
+      </app-filtro>
+      <app-button variant="secondary" [bloque]="false" [loading]="exportando()" (click)="exportar()">
+        <app-icon name="descargar" class="h-4 w-4" /> Exportar Excel
+      </app-button>
+    </div>
+  </div>
+
+  @if (totalPendientes() > 0 && estado() !== 0) {
+    <button
+      type="button"
+      class="mb-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 text-left text-sm text-warning-900 hover:bg-warning-100"
+      (click)="verPendientes()"
+    >
+      <span>
+        <strong>{{ totalPendientes() }} {{ totalPendientes() === 1 ? 'evento espera' : 'eventos esperan' }} evaluación</strong>
+        en el rango de fechas.
+      </span>
+      <span class="font-bold whitespace-nowrap">Ver →</span>
+    </button>
+  }
+
+  <div class="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
+    <app-estado-lista
+      [cargando]="bandeja.isLoading()"
+      [error]="error()"
+      [hayDatos]="!!resultado()?.items?.length"
+      tituloVacio="No hay eventos"
+      [textoVacio]="estado() === 0 ? 'No hay eventos completados pendientes de evaluar en el rango.' : 'Ningún evento coincide con los filtros aplicados.'"
+      (reintentar)="bandeja.reload()"
+    >
+      @if (resultado(); as r) {
+        <div class="overflow-x-auto">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Evento</th>
+                <th>Ciudadano</th>
+                <th>Unidad</th>
+                <th>Evaluación</th>
+                <th>Intentos</th>
+                <th><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of r.items; track item.eventoId) {
+                <tr class="cursor-pointer hover:bg-neutral-50" (click)="eventoAbierto.set(item.eventoId)">
+                  <td class="min-w-56">
+                    <p class="font-bold text-neutral-900">#{{ item.eventoId }} · {{ item.tipos.join(', ') }}</p>
+                    <p class="text-xs text-neutral-500">{{ fechaHora(item.fechaHoraReporte) }}</p>
+                  </td>
+                  <td class="min-w-48">
+                    <p class="font-semibold">{{ item.ciudadanoPrincipal ?? 'Sin personas registradas' }}</p>
+                    @if (item.telefono) {
+                      <p class="font-mono text-xs text-neutral-500">{{ item.telefono }}</p>
+                    } @else {
+                      <p class="text-xs text-danger-700">Sin teléfono</p>
+                    }
+                  </td>
+                  <td class="min-w-40">
+                    <p class="font-semibold">{{ item.unidadFicha }}</p>
+                    <p class="text-xs text-neutral-500">{{ item.unidadDenominacion }}</p>
+                  </td>
+                  <td>
+                    <app-badge [tono]="ESTADO[estadoDe(item)].tono">{{ ESTADO[estadoDe(item)].label }}</app-badge>
+                    @if (item.cerrada) {
+                      <p class="mt-1 text-xs text-neutral-500">{{ fechaHora(item.cerrada) }}</p>
+                    }
+                  </td>
+                  <td class="whitespace-nowrap">
+                    {{ item.intentos }}
+                    @if (item.ultimoIntento) {
+                      <p class="text-xs text-neutral-500">Último: {{ fechaHora(item.ultimoIntento) }}</p>
+                    }
+                  </td>
+                  <td class="text-right">
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold whitespace-nowrap text-primary-600 hover:bg-primary-50"
+                      [attr.aria-label]="'Evaluar el evento ' + item.eventoId"
+                      (click)="$event.stopPropagation(); eventoAbierto.set(item.eventoId)"
+                    >
+                      <app-icon name="calidad" class="h-4 w-4" />
+                      {{ item.estadoEvaluacion === null ? 'Evaluar' : item.estadoEvaluacion === 1 ? 'Continuar' : 'Ver' }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-paginador [pagina]="pagina()" [tamano]="tamano" [total]="r.totalCount" (paginaChange)="pagina.set($event)" />
+      }
+    </app-estado-lista>
+  </div>
+</app-module-page>
+
+<app-evaluar-evento [eventoId]="eventoAbierto()" (cerrar)="eventoAbierto.set(null)" (cambiado)="cambioEnEvaluacion()" />

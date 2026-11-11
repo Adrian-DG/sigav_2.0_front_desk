@@ -1,0 +1,69 @@
+<app-dialogo
+  [abierto]="!!creacion()"
+  [titulo]="esZona() ? 'Nueva zona' : 'Nuevo tramo'"
+  [descripcion]="
+    esZona()
+      ? 'La zona pertenece a una región y agrupa tramos.'
+      : 'El tramo pertenece a una zona y se podrá asignar a las denominaciones.'
+  "
+  [sucio]="sucio()"
+  [ocupado]="guardando()"
+  (cerrar)="cerrar.emit()"
+>
+  <form class="flex flex-col gap-4" novalidate (submit)="$event.preventDefault(); guardar()">
+    <fieldset class="flex flex-col gap-4" [disabled]="guardando()">
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Nombre</span>
+        <input
+          class="control"
+          autocomplete="off"
+          [placeholder]="esZona() ? 'Zona Cibao Norte…' : 'Tramo Autopista Duarte…'"
+          [attr.maxlength]="nombreMax"
+          [class.border-danger-500]="error('nombre')"
+          [value]="nombre()"
+          (input)="cambiar('nombre', $any($event.target).value)"
+        />
+        @if (error('nombre'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+
+      @if (esZona()) {
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-neutral-600">Región</span>
+          <select class="control" [class.border-danger-500]="error('region')" (change)="cambiar('region', $any($event.target).value)">
+            <option value="" [selected]="region() === ''">Seleccione…</option>
+            @for (r of regiones; track r.valor) {
+              <option [value]="r.valor" [selected]="region() === '' + r.valor">{{ r.label }}</option>
+            }
+          </select>
+          @if (error('region'); as e) {
+            <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+          }
+        </label>
+      } @else {
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-neutral-600">Zona</span>
+          <select class="control" [class.border-danger-500]="error('zonaId')" (change)="cambiar('zonaId', $any($event.target).value)">
+            <option value="" [selected]="zonaId() === ''">{{ opcionesZona().length ? 'Seleccione…' : 'No hay zonas activas' }}</option>
+            @for (z of opcionesZona(); track z.id) {
+              <option [value]="z.id" [selected]="zonaId() === '' + z.id">{{ z.label }}</option>
+            }
+          </select>
+          @if (error('zonaId'); as e) {
+            <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+          }
+        </label>
+      }
+    </fieldset>
+
+    @if (errorGeneral()) {
+      <p class="rounded-xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700" role="alert">{{ errorGeneral() }}</p>
+    }
+  </form>
+
+  <app-button dialogoAcciones variant="ghost" [bloque]="false" [disabled]="guardando()" (click)="cancelar()">Cancelar</app-button>
+  <app-button dialogoAcciones [bloque]="false" [loading]="guardando()" (click)="guardar()">
+    {{ esZona() ? 'Crear zona' : 'Crear tramo' }}
+  </app-button>
+</app-dialogo>

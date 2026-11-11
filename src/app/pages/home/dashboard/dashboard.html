@@ -81,24 +81,24 @@
     <div class="h-72 animate-pulse rounded-2xl bg-neutral-100"></div>
   } @else {
     <!-- Nivel del desglose (filtra todo el panel) -->
-    @if (seleccion().regionId !== null) {
+    @if (seleccion().zonaId !== null) {
       <nav class="flex flex-wrap items-center gap-2 text-sm" aria-label="Nivel del desglose">
-        <button type="button" class="font-bold text-primary-600 hover:underline" (click)="seleccion.set({ regionId: null, tramoId: null })">
-          Todas las regiones
+        <button type="button" class="font-bold text-primary-600 hover:underline" (click)="seleccion.set({ zonaId: null, tramoId: null })">
+          Todas las zonas
         </button>
         <app-icon name="siguiente" class="h-4 w-4 text-neutral-400" />
         @if (seleccion().tramoId !== null) {
           <button
             type="button"
             class="font-bold text-primary-600 hover:underline"
-            (click)="seleccion.set({ regionId: seleccion().regionId, tramoId: null })"
+            (click)="seleccion.set({ zonaId: seleccion().zonaId, tramoId: null })"
           >
-            {{ migas().region ?? 'Región' }}
+            {{ migas().zona ?? 'Zona' }}
           </button>
           <app-icon name="siguiente" class="h-4 w-4 text-neutral-400" />
           <span class="font-bold text-neutral-900">{{ migas().tramo ?? 'Tramo' }}</span>
         } @else {
-          <span class="font-bold text-neutral-900">{{ migas().region ?? 'Región' }}</span>
+          <span class="font-bold text-neutral-900">{{ migas().zona ?? 'Zona' }}</span>
         }
       </nav>
     }
@@ -275,7 +275,7 @@
       <div class="overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm">
         <div class="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-5">
           <h3 class="text-sm font-bold text-neutral-900">
-            {{ seleccion().tramoId !== null ? 'Unidades del tramo' : seleccion().regionId !== null ? 'Tramos de la región' : 'Por región' }}
+            {{ seleccion().tramoId !== null ? 'Unidades del tramo' : seleccion().zonaId !== null ? 'Tramos de la zona' : 'Por zona' }}
           </h3>
           @if (seleccion().tramoId === null) {
             <span class="text-xs text-neutral-500">Haga clic en una fila para ver su detalle</span>

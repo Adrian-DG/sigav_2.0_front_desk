@@ -37,7 +37,18 @@ type Periodo = 'hoy' | '7d' | '30d' | 'mes' | 'personalizado';
 type Rango = { desde: string; hasta: string };
 
 /** Leaflet con el plugin leaflet.heat ya cargado (agrega L.heatLayer). */
-type LeafletConHeat = typeof Leaflet;
+type LeafletConHeat = typeof Leaflet & {
+  heatLayer(
+    puntos: [number, number, number?][],
+    opciones?: {
+      radius?: number;
+      blur?: number;
+      maxZoom?: number;
+      minOpacity?: number;
+      gradient?: Record<number, string>;
+    },
+  ): Leaflet.Layer;
+};
 
 /** República Dominicana: vista inicial y la del botón "Todo el país". */
 const LIMITES_RD: Leaflet.LatLngBoundsExpression = [
@@ -184,6 +195,8 @@ export class Mapa {
       const modulo = await import('leaflet');
       const L = ((modulo as unknown as { default?: LeafletConHeat }).default ?? modulo) as LeafletConHeat;
       (window as unknown as { L: LeafletConHeat }).L = L;
+      // The plugin augments Leaflet at runtime but has no TypeScript declarations.
+      // @ts-ignore
       await import('leaflet.heat');
 
       this.L = L;
@@ -227,7 +240,7 @@ export class Mapa {
 
     const calor = (categoria: CategoriaEvento, gradiente: Record<number, string>) =>
       L.heatLayer(
-        puntos.filter((p) => p.categorias.includes(categoria)).map((p) => [p.latitud, p.longitud, 1] as Leaflet.HeatLatLngTuple),
+        puntos.filter((p) => p.categorias.includes(categoria)).map((p) => [p.latitud, p.longitud, 1] as [number, number, number]),
         // maxZoom: zoom en que cada punto pesa completo; por debajo se atenúa. Con 10 las zonas
         // calientes ya se notan con todo el país a la vista (zoom 7-8).
         { radius: 24, blur: 20, maxZoom: 10, minOpacity: 0.3, gradient: gradiente },

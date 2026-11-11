@@ -14,6 +14,7 @@ import {
 import type * as Leaflet from 'leaflet';
 
 import { environment } from '../../../environments/environment';
+import { AvisosService } from '../../core/services/avisos.service';
 import { fechaHora, mensajeDeError } from '../../core/utils/formato';
 import { Badge } from '../../shared/components/badge/badge';
 import { Busqueda } from '../../shared/components/busqueda/busqueda';
@@ -44,7 +45,6 @@ const LIMITES_RD: Leaflet.LatLngBoundsExpression = [
 /** La app envía cada ~30 s; con 15 s el mapa queda a lo sumo un envío atrás. */
 const INTERVALO_ACTUALIZACION_MS = 15_000;
 
-type Aviso = { texto: string; error?: boolean };
 
 /**
  * Ubicación de las unidades (GET /unidades/posiciones), que la app móvil envía mientras el agente
@@ -112,7 +112,7 @@ export class UnidadesMapa {
       (u) =>
         visibles.has(u.estado) &&
         (tramoId === null || u.tramoId === tramoId) &&
-        (!texto || normalizar(`${u.ficha} ${u.denominacion ?? ''} ${u.agente} ${u.placa ?? ''}`).includes(texto)),
+        (!texto || normalizar(`${u.ficha} ${u.denominacion ?? ''} ${u.agente} ${u.componente ?? ''} ${u.placa ?? ''}`).includes(texto)),
     );
   });
 
@@ -126,7 +126,7 @@ export class UnidadesMapa {
 
   protected readonly porLiberar = signal<PosicionUnidad | null>(null);
   protected readonly liberando = signal(false);
-  protected readonly aviso = signal<Aviso | null>(null);
+  private readonly avisos = inject(AvisosService);
 
   // ------------------------------------------------ Leaflet
 
@@ -223,13 +223,13 @@ export class UnidadesMapa {
       next: () => {
         this.liberando.set(false);
         this.porLiberar.set(null);
-        this.aviso.set({ texto: `Se cerró la sesión de ${u.agente} en la unidad ${u.ficha}: otro agente ya puede iniciar sesión con ella.` });
+        this.avisos.exito(`Se cerró la sesión de ${u.agente} en la unidad ${u.ficha}: otro agente ya puede iniciar sesión con ella.`);
         this.posiciones.reload();
       },
       error: (error: unknown) => {
         this.liberando.set(false);
         this.porLiberar.set(null);
-        this.aviso.set({ texto: mensajeDeError(error) ?? 'No se pudo liberar la sesión.', error: true });
+        this.avisos.error(mensajeDeError(error) ?? 'No se pudo liberar la sesión.');
       },
     });
   }
@@ -374,6 +374,7 @@ export class UnidadesMapa {
     linea(`${u.nivel ?? TIPOS[tipoDeUnidad(u.nivel)].label} ${u.ficha}${u.placa ? ` · ${u.placa}` : ''}`, 'font-extrabold');
     linea(u.denominacion ? `${u.denominacion}${u.tramo ? ` · ${u.tramo}` : ''}` : 'Sin denominación', 'text-neutral-600');
     linea(`${u.rango ? `${u.rango} ` : ''}${u.agente}`, 'mt-1');
+    if (u.componente) linea(`Componente: ${u.componenteRango ? `${u.componenteRango} ` : ''}${u.componente}`);
     const estado = `${ESTADOS[u.estado].label} · ${hace(Date.parse(u.fechaHoraRecibidaUtc), this.ahora())}`;
     linea(estado, 'mt-1 font-bold');
     div.lastElementChild?.setAttribute('style', `color: ${ESTADOS[u.estado].color}`);

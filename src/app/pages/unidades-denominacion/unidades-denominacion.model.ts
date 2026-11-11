@@ -11,8 +11,14 @@ export const JERARQUIA: Record<number, { label: string; tono: TonoBadge }> = {
 export const REGIONES: Record<number, string> = { 1: 'Este', 2: 'Norte', 3: 'Sur' };
 
 /** Opciones del selector de tramo: la zona va como detalle (se muestra y se busca). */
-export function opcionesDeTramo(opciones: OpcionesAsignacion | undefined): { id: number; nombre: string; detalle: string }[] {
-  return (opciones?.tramos ?? []).map((t) => ({ id: t.id, nombre: t.nombre, detalle: `Zona ${t.zona}` }));
+export function opcionesDeTramo(
+  opciones: OpcionesAsignacion | undefined,
+): { id: number; nombre: string; detalle: string }[] {
+  return (opciones?.tramos ?? []).map((t) => ({
+    id: t.id,
+    nombre: t.nombre,
+    detalle: `Zona ${t.zona}`,
+  }));
 }
 
 /** Mirrors Application/Features/Operaciones/Unidades/UnidadViewModels.cs UnidadViewModel. */
@@ -46,7 +52,14 @@ export type Denominacion = {
 
 /** GET /unidades/opciones-asignacion (Unidades/GetOpcionesAsignacion.cs): solo activos. */
 export type OpcionesAsignacion = {
-  unidades: { id: number; ficha: string; placa: string | null; denominacionId: number | null; denominacion: string | null; estaDisponible: boolean }[];
+  unidades: {
+    id: number;
+    ficha: string;
+    placa: string | null;
+    denominacionId: number | null;
+    denominacion: string | null;
+    estaDisponible: boolean;
+  }[];
   denominaciones: {
     id: number;
     nombre: string;
@@ -56,7 +69,7 @@ export type OpcionesAsignacion = {
     unidadId: number | null;
     unidadFicha: string | null;
   }[];
-  /** zona: para distinguir el tramo y buscarlo también por su zona. */
+  /** zona: la del tramo, para distinguirlo en el selector. */
   tramos: { id: number; nombre: string; zona: string }[];
   niveles: { id: number; nombre: string; jerarquia: number }[];
 };
@@ -78,6 +91,34 @@ export const MENSAJE_FICHA = 'Formato: 1 o 2 letras, guion y 3 o 4 números (ej.
 export const MENSAJE_PLACA = 'Formato: 1 o 2 letras y 5 o 6 números (ej.: EL00101).';
 
 /** { "NuevaUnidad.Ficha": ["..."] } de la API → { "nuevaunidad.ficha": "..." } (primer mensaje, clave en minúsculas). */
-export function erroresPorClave(errors: Record<string, string[]> | null | undefined): Record<string, string> {
-  return Object.fromEntries(Object.entries(errors ?? {}).map(([clave, mensajes]) => [clave.toLowerCase(), mensajes[0]]));
+export function erroresPorClave(
+  errors: Record<string, string[]> | null | undefined,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(errors ?? {}).map(([clave, mensajes]) => [clave.toLowerCase(), mensajes[0]]),
+  );
 }
+
+/** POST /unidades/importar (Unidades/ImportarUnidadesDenominacion.cs ImportacionUnidadesResult). */
+export type ImportacionResultado = {
+  /** true: se guardó. false: vista previa, o hubo errores y no se guardó nada. */
+  aplicado: boolean;
+  totalFilas: number;
+  conErrores: number;
+  sinCambios: number;
+  asignaciones: number;
+  unidadesCreadas: number;
+  denominacionesCreadas: number;
+  filas: {
+    fila: number;
+    ficha: string;
+    denominacion: string;
+    estado: 'error' | 'sin-cambios' | 'cambios';
+    unidadNueva: boolean;
+    denominacionNueva: boolean;
+    cambios: string[];
+    errores: string[];
+  }[];
+  /** Unidades que no están en el archivo y pierden su denominación (quedan No disponibles). */
+  unidadesSinDenominacion: { id: number; ficha: string }[];
+};

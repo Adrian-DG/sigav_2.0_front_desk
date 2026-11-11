@@ -3,7 +3,9 @@
   ancho="amplio"
   titulo="Asignar denominación"
   descripcion="Elija la unidad y la denominación; cualquiera de las dos puede crearse aquí mismo."
-  (cerrar)="cancelar()"
+  [sucio]="sucio()"
+  [ocupado]="guardando()"
+  (cerrar)="cerrar.emit()"
 >
   <form id="form-asignar-denominacion" class="flex flex-col gap-6" novalidate (submit)="$event.preventDefault(); guardar()">
     <div class="grid gap-6 sm:grid-cols-2">

@@ -18,8 +18,8 @@ import {
 type Periodo = 'hoy' | 'ayer' | '7d' | 'mes' | 'personalizado';
 type Rango = { desde: string; hasta: string };
 
-/** Nivel del desglose: todas las regiones → una región → uno de sus tramos. */
-type Seleccion = { regionId: number | null; tramoId: number | null };
+/** Nivel del desglose: todas las zonas → una zona → uno de sus tramos. */
+type Seleccion = { zonaId: number | null; tramoId: number | null };
 
 /** Fila del desglose (región, tramo o unidad). */
 type Fila = {
@@ -45,10 +45,10 @@ const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
 
 /**
  * Panel de estadísticas de eventos del inicio. Todo sale de GET /estadisticas/eventos (front desk
- * ve todas las regiones):
+ * ve todas las zonas):
  * - el período elegido y el anterior de igual duración (para comparar);
  * - un día por petición para la tendencia de los últimos 7 días.
- * El desglose región → tramo → unidad se recorre en el navegador (la respuesta ya lo trae) y
+ * El desglose zona → tramo → unidad se recorre en el navegador (la respuesta ya lo trae) y
  * filtra todo el panel. Se actualiza solo cada minuto mientras la pestaña está visible.
  */
 @Component({
@@ -164,14 +164,14 @@ export class Dashboard {
 
   // ------------------------------------------------ Desglose (filtra todo el panel)
 
-  protected readonly seleccion = signal<Seleccion>({ regionId: null, tramoId: null });
+  protected readonly seleccion = signal<Seleccion>({ zonaId: null, tramoId: null });
 
   /** Nombres para las migas: se buscan en los datos actuales. */
   protected readonly migas = computed(() => {
-    const { regionId, tramoId } = this.seleccion();
-    const region = this.datos()?.regiones.find((r) => r.regionAsistenciaId === regionId);
-    const tramo = region?.tramos.find((t) => t.tramoId === tramoId);
-    return { region: region?.region ?? null, tramo: tramo?.tramo ?? null };
+    const { zonaId, tramoId } = this.seleccion();
+    const zona = this.datos()?.zonas.find((r) => r.zonaId === zonaId);
+    const tramo = zona?.tramos.find((t) => t.tramoId === tramoId);
+    return { zona: zona?.zona ?? null, tramo: tramo?.tramo ?? null };
   });
 
   protected readonly resumen = computed(() => resumenDe(this.datos(), this.seleccion()));
@@ -246,9 +246,9 @@ export class Dashboard {
   protected readonly filas = computed<Fila[]>(() => {
     const datos = this.datos();
     if (!datos) return [];
-    const { regionId, tramoId } = this.seleccion();
-    const region = datos.regiones.find((r) => r.regionAsistenciaId === regionId);
-    const tramo = region?.tramos.find((t) => t.tramoId === tramoId);
+    const { zonaId, tramoId } = this.seleccion();
+    const zona = datos.zonas.find((r) => r.zonaId === zonaId);
+    const tramo = zona?.tramos.find((t) => t.tramoId === tramoId);
 
     let filas: Fila[];
     if (tramo) {
@@ -260,22 +260,22 @@ export class Dashboard {
         bajar: null,
         filtroEventos: { unidadId: u.unidadId },
       }));
-    } else if (region) {
-      filas = region.tramos.map((t) => ({
+    } else if (zona) {
+      filas = zona.tramos.map((t) => ({
         clave: `${t.tramoId}`,
         nombre: t.tramo,
         detalle: `${t.unidades.length} ${t.unidades.length === 1 ? 'unidad' : 'unidades'}`,
         resumen: t.resumen,
-        bajar: { regionId: region.regionAsistenciaId, tramoId: t.tramoId },
+        bajar: { zonaId: zona.zonaId, tramoId: t.tramoId },
         filtroEventos: { tramoId: t.tramoId },
       }));
     } else {
-      filas = datos.regiones.map((r) => ({
-        clave: `${r.regionAsistenciaId}`,
-        nombre: r.region,
+      filas = datos.zonas.map((r) => ({
+        clave: `${r.zonaId}`,
+        nombre: r.zona,
         detalle: `Región ${REGION_MACRO[r.regionMacro] ?? ''} · ${r.tramos.length} ${r.tramos.length === 1 ? 'tramo' : 'tramos'}`,
         resumen: r.resumen,
-        bajar: { regionId: r.regionAsistenciaId, tramoId: null },
+        bajar: { zonaId: r.zonaId, tramoId: null },
         filtroEventos: null,
       }));
     }
@@ -286,10 +286,10 @@ export class Dashboard {
   /** Unidades con eventos dentro del nivel elegido (una ficha reasignada suma sus denominaciones). */
   private readonly unidadesConEventos = computed(() => {
     const datos = this.datos();
-    const { regionId, tramoId } = this.seleccion();
+    const { zonaId, tramoId } = this.seleccion();
     const porUnidad = new Map<number, { unidadId: number; ficha: string; denominaciones: Set<string>; total: number }>();
-    for (const r of datos?.regiones ?? []) {
-      if (regionId !== null && r.regionAsistenciaId !== regionId) continue;
+    for (const r of datos?.zonas ?? []) {
+      if (zonaId !== null && r.zonaId !== zonaId) continue;
       for (const t of r.tramos) {
         if (tramoId !== null && t.tramoId !== tramoId) continue;
         for (const u of t.unidades) {
@@ -347,13 +347,13 @@ export class Dashboard {
 }
 
 /** Resumen del nivel elegido (todo, una región o un tramo) dentro de una respuesta. */
-function resumenDe(datos: Estadisticas | undefined, { regionId, tramoId }: Seleccion): Resumen | undefined {
+function resumenDe(datos: Estadisticas | undefined, { zonaId, tramoId }: Seleccion): Resumen | undefined {
   if (!datos) return undefined;
-  if (regionId === null) return datos.resumen;
-  const region = datos.regiones.find((r) => r.regionAsistenciaId === regionId);
-  if (!region) return VACIO;
-  if (tramoId === null) return region.resumen;
-  return region.tramos.find((t) => t.tramoId === tramoId)?.resumen ?? VACIO;
+  if (zonaId === null) return datos.resumen;
+  const zona = datos.zonas.find((r) => r.zonaId === zonaId);
+  if (!zona) return VACIO;
+  if (tramoId === null) return zona.resumen;
+  return zona.tramos.find((t) => t.tramoId === tramoId)?.resumen ?? VACIO;
 }
 
 const VACIO: Resumen = { totalEventos: 0, porCategoria: [], porTipo: [] };

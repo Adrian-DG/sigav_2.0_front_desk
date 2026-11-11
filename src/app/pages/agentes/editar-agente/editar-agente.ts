@@ -1,9 +1,10 @@
 import { HttpClient, httpResource } from '@angular/common/http';
-import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 
 import { environment } from '../../../../environments/environment';
 import { ApiError } from '../../../core/models/api-error';
 import { INSTITUCIONES } from '../../../core/models/catalogos';
+import { huella } from '../../../core/utils/huella';
 import { mensajeDeError } from '../../../core/utils/formato';
 import { Button } from '../../../shared/components/button/button';
 import { Dialogo, DialogoAcciones } from '../../../shared/components/dialogo/dialogo';
@@ -43,6 +44,11 @@ export class EditarAgente {
   /** null: cerrado. */
   readonly agente = input<Agente | null>(null);
   readonly cerrar = output();
+
+  private readonly dialogo = viewChild.required(Dialogo);
+  /** Contenido del formulario al abrirlo: si cambia, cerrar pide confirmación. */
+  private readonly huellaInicial = signal('');
+  protected readonly sucio = computed(() => huella(this.form()) !== this.huellaInicial());
   /** Texto del aviso para el listado. */
   readonly guardado = output<string>();
 
@@ -101,6 +107,7 @@ export class EditarAgente {
           accesoTotal: a.accesoTotal,
         });
         this.rangoOriginal.set(a.rangoId);
+        this.huellaInicial.set(huella(this.form()));
         this.intentado.set(false);
         this.erroresApi.set({});
         this.errorGeneral.set(null);
@@ -127,7 +134,7 @@ export class EditarAgente {
   }
 
   protected cancelar(): void {
-    if (!this.guardando()) this.cerrar.emit();
+    this.dialogo().solicitarCierre();
   }
 
   protected guardar(): void {

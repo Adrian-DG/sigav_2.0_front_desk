@@ -1,7 +1,8 @@
 import { httpResource } from '@angular/common/http';
-import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
+import { Component, computed, linkedSignal, signal, inject } from '@angular/core';
 
 import { environment } from '../../../environments/environment';
+import { AvisosService } from '../../core/services/avisos.service';
 import type { PagedResult } from '../../core/models/paged-result';
 import { Permisos } from '../../core/permissions/permisos';
 import { AuthService } from '../../core/services/auth.service';
@@ -12,15 +13,24 @@ import { Button } from '../../shared/components/button/button';
 import { EstadoLista } from '../../shared/components/estado-lista/estado-lista';
 import { Filtro } from '../../shared/components/filtro/filtro';
 import { Icon } from '../../shared/components/icon/icon';
-import { ModulePage, ModuloAcciones, ModuloFiltros } from '../../shared/components/module-page/module-page';
+import {
+  ModulePage,
+  ModuloAcciones,
+  ModuloFiltros,
+} from '../../shared/components/module-page/module-page';
 import { Paginador } from '../../shared/components/paginador/paginador';
 import { Alta, type TipoAlta } from './alta/alta';
 import { Historial, type OrigenHistorial } from './historial/historial';
 import { NuevaZona } from './nueva-zona/nueva-zona';
-import { AsignarDenominacion, type InicioAsignacion } from './asignar-denominacion/asignar-denominacion';
+import {
+  AsignarDenominacion,
+  type InicioAsignacion,
+} from './asignar-denominacion/asignar-denominacion';
+import { Importar } from './importar/importar';
 import {
   type AsignacionResultado,
   type Denominacion,
+  type ImportacionResultado,
   JERARQUIA,
   type OpcionesAsignacion,
   type Unidad,
@@ -54,7 +64,7 @@ type Vista = 'unidades' | 'denominaciones';
     AsignarDenominacion,
     Alta,
     Historial,
-    NuevaZona,
+    Importar,
   ],
   templateUrl: './unidades-denominacion.html',
 })
@@ -68,7 +78,9 @@ export class UnidadesDenominacion {
 
   /** Crear zonas (con sus tramos) requiere zonas.gestionar; la API lo vuelve a exigir. */
   private readonly auth = inject(AuthService);
-  protected readonly puedeGestionarZonas = computed(() => this.auth.permisos().includes(Permisos.ZonasGestionar));
+  protected readonly puedeGestionarZonas = computed(() =>
+    (this.auth.permisos() as readonly string[]).includes('zonas.gestionar'),
+  );
 
   protected readonly vista = signal<Vista>('unidades');
   // Cada vista busca sobre campos distintos: al cambiar de vista la búsqueda empieza vacía
@@ -85,20 +97,29 @@ export class UnidadesDenominacion {
   });
 
   protected readonly unidades = httpResource<PagedResult<Unidad>>(() =>
-    this.vista() === 'unidades' ? { url: `${environment.apiUrl}/unidades`, params: this.params() } : undefined,
+    this.vista() === 'unidades'
+      ? { url: `${environment.apiUrl}/unidades`, params: this.params() }
+      : undefined,
   );
 
   protected readonly denominaciones = httpResource<PagedResult<Denominacion>>(() =>
-    this.vista() === 'denominaciones' ? { url: `${environment.apiUrl}/denominaciones`, params: this.params() } : undefined,
+    this.vista() === 'denominaciones'
+      ? { url: `${environment.apiUrl}/denominaciones`, params: this.params() }
+      : undefined,
   );
 
-  private readonly activo = computed(() => (this.vista() === 'unidades' ? this.unidades : this.denominaciones));
+  private readonly activo = computed(() =>
+    this.vista() === 'unidades' ? this.unidades : this.denominaciones,
+  );
 
   protected readonly cargando = computed(() => this.activo().isLoading());
   protected readonly error = computed(() => mensajeDeError(this.activo().error()));
 
   // Mientras llega la página nueva se sigue mostrando la anterior de la misma vista
-  protected readonly listaUnidades = linkedSignal<PagedResult<Unidad> | undefined, PagedResult<Unidad> | undefined>({
+  protected readonly listaUnidades = linkedSignal<
+    PagedResult<Unidad> | undefined,
+    PagedResult<Unidad> | undefined
+  >({
     source: () => (this.unidades.hasValue() ? this.unidades.value() : undefined),
     computation: (nuevo, previo) => nuevo ?? previo?.value,
   });
@@ -111,7 +132,9 @@ export class UnidadesDenominacion {
   });
 
   protected readonly hayDatos = computed(() =>
-    this.vista() === 'unidades' ? !!this.listaUnidades()?.items.length : !!this.listaDenominaciones()?.items.length,
+    this.vista() === 'unidades'
+      ? !!this.listaUnidades()?.items.length
+      : !!this.listaDenominaciones()?.items.length,
   );
 
   protected recargar(): void {
@@ -123,7 +146,8 @@ export class UnidadesDenominacion {
   /** Diálogo de asignación abierto (con lo preseleccionado), o null. */
   protected readonly asignando = signal<InicioAsignacion | null>(null);
   protected readonly alta = signal<TipoAlta | null>(null);
-  protected readonly aviso = signal<string | null>(null);
+  protected readonly importando = signal(false);
+  private readonly avisos = inject(AvisosService);
   /** Historial abierto (de una unidad o de una denominación), o null. */
   protected readonly historialDe = signal<OrigenHistorial | null>(null);
 
@@ -132,7 +156,9 @@ export class UnidadesDenominacion {
   protected readonly opciones = httpResource<OpcionesAsignacion>(() =>
     this.usado() ? `${environment.apiUrl}/unidades/opciones-asignacion` : undefined,
   );
-  protected readonly opcionesCargadas = computed(() => (this.opciones.hasValue() ? this.opciones.value() : undefined));
+  protected readonly opcionesCargadas = computed(() =>
+    this.opciones.hasValue() ? this.opciones.value() : undefined,
+  );
 
   protected abrirAsignacion(inicio: InicioAsignacion = {}): void {
     this.prepararDialogo();
@@ -148,7 +174,25 @@ export class UnidadesDenominacion {
     this.asignando.set(null);
     const partes = [`${r.ficha} ahora tiene la denominación ${r.denominacion}.`];
     if (r.denominacionAnterior) partes.push(`${r.denominacionAnterior} quedó libre.`);
-    for (const u of r.unidadesLiberadas) partes.push(`${u.ficha} quedó sin denominación y No disponible.`);
+    for (const u of r.unidadesLiberadas)
+      partes.push(`${u.ficha} quedó sin denominación y No disponible.`);
+    this.terminar(partes.join(' '));
+  }
+
+  protected abrirImportacion(): void {
+    this.importando.set(true);
+  }
+
+  protected importado(r: ImportacionResultado): void {
+    this.importando.set(false);
+    const partes = [`Carga aplicada: ${r.totalFilas} filas.`];
+    if (r.asignaciones) partes.push(`${r.asignaciones} asignaciones.`);
+    if (r.unidadesCreadas) partes.push(`${r.unidadesCreadas} unidades nuevas.`);
+    if (r.denominacionesCreadas) partes.push(`${r.denominacionesCreadas} denominaciones nuevas.`);
+    if (r.unidadesSinDenominacion.length)
+      partes.push(
+        `${r.unidadesSinDenominacion.map((u) => u.ficha).join(', ')} quedaron sin denominación y No disponibles.`,
+      );
     this.terminar(partes.join(' '));
   }
 
@@ -160,26 +204,24 @@ export class UnidadesDenominacion {
   protected readonly creandoZona = signal(false);
 
   protected abrirZona(): void {
-    this.aviso.set(null);
     this.creandoZona.set(true);
   }
 
   protected zonaCreada(texto: string): void {
     this.creandoZona.set(false);
-    this.aviso.set(texto);
+    this.avisos.exito(texto);
     // Los tramos nuevos deben aparecer al crear la próxima denominación
     if (this.usado()) this.opciones.reload();
   }
 
   private prepararDialogo(): void {
-    this.aviso.set(null);
     // Siempre datos frescos: otro usuario pudo cambiar asignaciones desde la última vez
     if (this.usado()) this.opciones.reload();
     else this.usado.set(true);
   }
 
   private terminar(aviso: string): void {
-    this.aviso.set(aviso);
+    this.avisos.exito(aviso);
     this.unidades.reload();
     this.denominaciones.reload();
     this.opciones.reload();

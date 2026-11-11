@@ -1,0 +1,234 @@
+<app-dialogo
+  [abierto]="abierto()"
+  ancho="amplio"
+  titulo="Nuevo evento"
+  descripcion="Se registra como pendiente y se asigna a la unidad, que recibe la notificación en la app."
+  [sucio]="sucio()"
+  [ocupado]="guardando()"
+  (cerrar)="cerrar.emit()"
+>
+  <form id="form-nuevo-evento" class="flex flex-col gap-6" novalidate (submit)="$event.preventDefault(); guardar()">
+    @if (errorCatalogos()) {
+      <p class="rounded-xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700" role="alert">{{ errorCatalogos() }}</p>
+    }
+
+    <!-- Qué pasó -->
+    <fieldset class="flex flex-col gap-3" [disabled]="guardando()">
+      <legend class="mb-3 text-xs font-bold tracking-wider text-neutral-500 uppercase">Evento</legend>
+
+      <label class="flex flex-col gap-1.5 sm:w-64">
+        <span class="text-sm font-semibold text-neutral-600">Canal de reporte</span>
+        <select class="control" (change)="cambiar('canal', +$any($event.target).value)">
+          @for (c of canales; track c.id) {
+            <option [value]="c.id" [selected]="form().canal === c.id">{{ c.nombre }}</option>
+          }
+        </select>
+      </label>
+
+      <div class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Tipos de evento</span>
+        @if (cargandoTipos()) {
+          <span class="text-sm text-neutral-400">Cargando…</span>
+        }
+        <div class="grid gap-3 sm:grid-cols-2">
+          @for (g of gruposTipos(); track g.categoria) {
+            <div class="rounded-xl border border-neutral-100 p-3">
+              <p class="mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">{{ CATEGORIA_EVENTO[g.categoria].label }}</p>
+              <div class="flex max-h-44 flex-col gap-1.5 overflow-y-auto">
+                @for (t of g.tipos; track t.id) {
+                  <label class="inline-flex cursor-pointer items-center gap-2 text-sm text-neutral-800">
+                    <input
+                      type="checkbox"
+                      class="h-4 w-4 accent-primary-600"
+                      [checked]="form().tipoEventoIds.includes(t.id)"
+                      (change)="alternarTipo(t.id, $any($event.target).checked)"
+                    />
+                    {{ t.nombre }}
+                  </label>
+                }
+              </div>
+            </div>
+          }
+        </div>
+        @if (error('tipos', 'tipoeventoids'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </div>
+    </fieldset>
+
+    <!-- Dónde -->
+    <fieldset class="flex flex-col gap-3" [disabled]="guardando()">
+      <legend class="mb-3 text-xs font-bold tracking-wider text-neutral-500 uppercase">Ubicación</legend>
+      <p class="text-sm text-neutral-500">Haga clic en el mapa donde ocurre el evento. Los puntos verdes son las unidades disponibles (clic para elegir una).</p>
+      <div class="relative overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100">
+        <div #mapa class="h-72 w-full" role="region" aria-label="Mapa para ubicar el evento"></div>
+        @if (errorMapa()) {
+          <div class="absolute inset-0 z-[500] flex items-center justify-center bg-neutral-100 px-6 text-center text-sm text-neutral-500">
+            {{ errorMapa() }}
+          </div>
+        }
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-neutral-600">Latitud</span>
+          <input
+            class="control"
+            inputmode="decimal"
+            placeholder="18.4861"
+            [value]="form().latitud?.toFixed(6) ?? ''"
+            (change)="cambiarCoordenada('latitud', $any($event.target).value)"
+          />
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-neutral-600">Longitud</span>
+          <input
+            class="control"
+            inputmode="decimal"
+            placeholder="-69.9312"
+            [value]="form().longitud?.toFixed(6) ?? ''"
+            (change)="cambiarCoordenada('longitud', $any($event.target).value)"
+          />
+        </label>
+      </div>
+      @if (error('ubicacion', 'latitud', 'longitud'); as e) {
+        <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+      }
+
+      <div class="grid gap-3 sm:grid-cols-3">
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-neutral-600">Provincia</span>
+          <app-selector
+            [opciones]="opcionesProvincia()"
+            placeholder="Buscar provincia…"
+            [deshabilitado]="guardando()"
+            [valor]="form().provinciaId"
+            (valorChange)="cambiarProvincia($event)"
+          />
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-neutral-600">Municipio</span>
+          <app-selector
+            [opciones]="opcionesMunicipio()"
+            [placeholder]="form().provinciaId ? 'Buscar municipio…' : 'Elija la provincia'"
+            [deshabilitado]="guardando() || !form().provinciaId"
+            [valor]="form().municipioId"
+            (valorChange)="cambiar('municipioId', $event)"
+          />
+          @if (error('municipio', 'municipioid'); as e) {
+            <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+          }
+        </label>
+        <label class="flex flex-col gap-1.5">
+          <span class="text-sm font-semibold text-neutral-600">Tramo <span class="font-normal text-neutral-400">(opcional)</span></span>
+          <app-selector
+            [opciones]="opcionesTramo()"
+            placeholder="El de la unidad"
+            [deshabilitado]="guardando()"
+            [valor]="form().tramoId"
+            (valorChange)="cambiar('tramoId', $event)"
+          />
+          @if (error('tramo', 'tramoid'); as e) {
+            <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+          }
+        </label>
+      </div>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Dirección de referencia <span class="font-normal text-neutral-400">(opcional)</span></span>
+        <input
+          class="control"
+          placeholder="Autopista Duarte km 25, frente a la bomba"
+          autocomplete="off"
+          [attr.maxlength]="direccionMax"
+          [value]="form().direccion"
+          (input)="cambiar('direccion', $any($event.target).value)"
+        />
+        @if (error('direccion', 'direccion'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+    </fieldset>
+
+    <!-- Quién lo atiende -->
+    <fieldset class="flex flex-col gap-3" [disabled]="guardando()">
+      <legend class="mb-3 text-xs font-bold tracking-wider text-neutral-500 uppercase">Asignar a</legend>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Unidad disponible</span>
+        <app-selector
+          [opciones]="opcionesUnidad()"
+          [placeholder]="cargandoUnidades() ? 'Cargando unidades…' : opcionesUnidad().length ? 'Buscar ficha…' : 'No hay unidades disponibles'"
+          [deshabilitado]="guardando()"
+          [valor]="form().unidadId"
+          (valorChange)="cambiarUnidad($event)"
+        />
+        @if (error('unidad', 'unidadid'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+        @if (errorUnidades(); as e) {
+          <span class="text-xs font-medium text-danger-600" role="alert">
+            {{ e }}
+            <button type="button" class="font-bold underline" (click)="recargarUnidades()">Reintentar</button>
+          </span>
+        }
+      </label>
+
+      @if (unidad(); as u) {
+        <div class="flex flex-col gap-2" role="radiogroup" aria-label="Agente que atiende">
+          <span class="text-sm font-semibold text-neutral-600">Agente que atiende</span>
+          @for (a of u.agentes; track a.agenteId) {
+            <label
+              class="flex items-center gap-3 rounded-xl border px-3 py-2 text-sm"
+              [class]="a.disponible ? 'cursor-pointer border-neutral-200 hover:border-primary-300' : 'border-neutral-100 bg-neutral-50 text-neutral-400'"
+            >
+              <input
+                type="radio"
+                name="agente"
+                class="h-4 w-4 accent-primary-600"
+                [disabled]="!a.disponible"
+                [checked]="form().agenteId === a.agenteId"
+                (change)="cambiar('agenteId', a.agenteId)"
+              />
+              <span class="min-w-0 flex-1">
+                <span class="block font-semibold" [class.text-neutral-900]="a.disponible">{{ describirAgente(a) }}</span>
+                <span class="block text-xs">
+                  {{ a.esComponente ? 'Componente' : 'Agente de la sesión' }} ·
+                  {{ ocupacionAgente(a) }}
+                </span>
+              </span>
+            </label>
+          }
+          @if (error('agente', 'agenteid'); as e) {
+            <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+          }
+          @if (!u.conectadaNotificaciones) {
+            <p class="rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-900" role="status">
+              La unidad no tiene la app conectada a las notificaciones ahora: verá el evento al abrir la app o actualizar su lista.
+            </p>
+          }
+        </div>
+      }
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Comentario para la unidad <span class="font-normal text-neutral-400">(opcional)</span></span>
+        <textarea
+          class="control min-h-20 py-2"
+          [attr.maxlength]="comentarioMax"
+          [value]="form().comentario"
+          (input)="cambiar('comentario', $any($event.target).value)"
+        ></textarea>
+        @if (error('comentario', 'comentario'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+    </fieldset>
+
+    @if (errorGeneral()) {
+      <p class="rounded-xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700" role="alert">{{ errorGeneral() }}</p>
+    }
+  </form>
+
+  <app-button dialogoAcciones variant="ghost" [bloque]="false" [disabled]="guardando()" (click)="cancelar()">Cancelar</app-button>
+  <app-button dialogoAcciones [bloque]="false" [loading]="guardando()" (click)="guardar()">
+    {{ unidad() ? 'Asignar a ' + unidad()!.ficha : 'Asignar evento' }}
+  </app-button>
+</app-dialogo>

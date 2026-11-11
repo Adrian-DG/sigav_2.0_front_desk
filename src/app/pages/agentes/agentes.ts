@@ -2,6 +2,9 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
 
 import { environment } from '../../../environments/environment';
+import { Permisos } from '../../core/permissions/permisos';
+import { AuthService } from '../../core/services/auth.service';
+import { AvisosService } from '../../core/services/avisos.service';
 import { INSTITUCIONES } from '../../core/models/catalogos';
 import type { PagedResult } from '../../core/models/paged-result';
 import { fecha, mensajeDeError } from '../../core/utils/formato';
@@ -13,20 +16,21 @@ import { Filtro } from '../../shared/components/filtro/filtro';
 import { Icon } from '../../shared/components/icon/icon';
 import { ModulePage, ModuloAcciones, ModuloFiltros } from '../../shared/components/module-page/module-page';
 import { Paginador } from '../../shared/components/paginador/paginador';
-import { AREAS_OPERATIVAS, type Agente } from './agentes.model';
+import { AREAS_OPERATIVAS, type Agente, type ImportacionAgentesResultado } from './agentes.model';
 import { EditarAgente } from './editar-agente/editar-agente';
+import { ImportarAgentes } from './importar-agentes/importar-agentes';
 
 const TAMANO_PAGINA = 20;
 
 type Autorizacion = 'todos' | 'autorizados' | 'pendientes';
 
-type Aviso = { texto: string; deshacer?: () => void; error?: boolean };
 
 /**
  * Personal operativo (GET /agentes): búsqueda por cédula o nombre y estado de autorización.
  * El interruptor de cada fila autoriza o quita el acceso a la app (PATCH /agentes/{id}/autorizacion);
  * al quitarlo, la API rechaza de inmediato la sesión que el agente tenga abierta. "Editar" cambia
- * sus datos, rango o especialidad (PUT /agentes/{id}).
+ * sus datos, rango o especialidad (PUT /agentes/{id}). "Cargar Excel" crea o actualiza agentes en
+ * bloque (POST /agentes/importar).
  */
 @Component({
   selector: 'app-agentes',
@@ -43,11 +47,16 @@ type Aviso = { texto: string; deshacer?: () => void; error?: boolean };
     Button,
     Icon,
     EditarAgente,
+    ImportarAgentes,
   ],
   templateUrl: './agentes.html',
 })
 export class Agentes {
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
+
+  /** Alta, edición, autorización, desactivación e importación (agentes.gestionar); sin él, solo consulta. */
+  protected readonly puedeGestionar = computed(() => this.auth.permisos().includes(Permisos.GestionarAgentes));
 
   protected readonly areas = Object.entries(AREAS_OPERATIVAS).map(([valor, label]) => ({ valor: Number(valor), label }));
   protected readonly AREA = AREAS_OPERATIVAS;
@@ -94,8 +103,9 @@ export class Agentes {
 
   /** Ids con un cambio de autorización en curso (su interruptor queda deshabilitado). */
   protected readonly cambiando = signal<ReadonlySet<number>>(new Set());
-  protected readonly aviso = signal<Aviso | null>(null);
+  private readonly avisos = inject(AvisosService);
   protected readonly editando = signal<Agente | null>(null);
+  protected readonly importando = signal(false);
 
   protected alternarAutorizacion(agente: Agente): void {
     this.cambiarAutorizacion(agente, !agente.autorizado, true);
@@ -104,22 +114,23 @@ export class Agentes {
   private cambiarAutorizacion(agente: Agente, autorizado: boolean, permitirDeshacer: boolean): void {
     if (this.cambiando().has(agente.id)) return;
     this.cambiando.update((s) => new Set(s).add(agente.id));
-    this.aviso.set(null);
 
     this.http.patch(`${environment.apiUrl}/agentes/${agente.id}/autorizacion`, { autorizado }).subscribe({
       next: () => {
         this.terminarCambio(agente.id);
         const nombre = `${agente.nombre} ${agente.apellido}`;
-        this.aviso.set({
-          texto: autorizado
+        this.avisos.exito(
+          autorizado
             ? `Se autorizó a ${nombre}: ya puede iniciar sesión en la app.`
             : `Se quitó el acceso a ${nombre}: ya no puede usar la app (si tenía una sesión abierta, se cerrará).`,
-          deshacer: permitirDeshacer ? () => this.cambiarAutorizacion(agente, !autorizado, false) : undefined,
-        });
+          permitirDeshacer
+            ? { label: 'Deshacer', ejecutar: () => this.cambiarAutorizacion(agente, !autorizado, false) }
+            : undefined,
+        );
       },
       error: (error: unknown) => {
         this.terminarCambio(agente.id);
-        this.aviso.set({ texto: mensajeDeError(error) ?? 'No se pudo cambiar la autorización.', error: true });
+        this.avisos.error(mensajeDeError(error) ?? 'No se pudo cambiar la autorización.');
       },
     });
   }
@@ -136,8 +147,23 @@ export class Agentes {
 
   protected guardado(texto: string): void {
     this.editando.set(null);
-    this.aviso.set({ texto });
+    this.avisos.exito(texto);
     this.agentes.reload();
+  }
+
+  protected abrirImportacion(): void {
+    this.importando.set(true);
+  }
+
+  protected importado(r: ImportacionAgentesResultado): void {
+    this.importando.set(false);
+    const partes = [`Carga aplicada: ${r.totalFilas} filas.`];
+    if (r.agentesCreados) partes.push(`${r.agentesCreados} agentes nuevos.`);
+    if (r.agentesActualizados) partes.push(`${r.agentesActualizados} actualizados.`);
+    if (r.sinCambios) partes.push(`${r.sinCambios} sin cambios.`);
+    this.avisos.exito(partes.join(' '));
+    this.agentes.reload();
+    this.pendientes.reload();
   }
 
   protected verPendientes(): void {

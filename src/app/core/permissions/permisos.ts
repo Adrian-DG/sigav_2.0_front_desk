@@ -6,10 +6,15 @@
  */
 export const Permisos = {
   Eventos: 'eventos.ver',
+  AsignarEventos: 'eventos.asignar',
+  NotificarUnidades: 'unidades.notificar',
   Agentes: 'agentes.ver',
+  GestionarAgentes: 'agentes.gestionar',
   UnidadesDenominacion: 'unidades.ver',
-  ZonasGestionar: 'zonas.gestionar',
+  GestionarZonas: 'zonas.gestionar',
   Usuarios: 'usuarios.gestionar',
+  Calidad: 'calidad.evaluar',
+  EncuestasCalidad: 'calidad.encuestas',
 } as const;
 
 export type Permiso = (typeof Permisos)[keyof typeof Permisos];

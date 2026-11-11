@@ -1,9 +1,11 @@
-import { httpResource } from '@angular/common/http';
-import { Component, computed, inject, linkedSignal, signal, viewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { HttpClient, httpResource } from '@angular/common/http';
+import { Component, computed, effect, inject, linkedSignal, signal, viewChild } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { environment } from '../../../environments/environment';
+import { AvisosService } from '../../core/services/avisos.service';
 import type { PagedResult } from '../../core/models/paged-result';
+import { Permisos } from '../../core/permissions/permisos';
 import { fechaCorta, fechaHora, mensajeDeError } from '../../core/utils/formato';
 import { Badge } from '../../shared/components/badge/badge';
 import { Busqueda } from '../../shared/components/busqueda/busqueda';
@@ -15,7 +17,9 @@ import { MenuContextual, type OpcionMenu } from '../../shared/components/menu-co
 import { ModulePage, ModuloAcciones, ModuloFiltros } from '../../shared/components/module-page/module-page';
 import { Paginador } from '../../shared/components/paginador/paginador';
 import { Selector } from '../../shared/components/selector/selector';
+import { HasPermissionDirective } from '../../shared/directives/has-permission.directive';
 import { EventoDetalle } from './evento-detalle/evento-detalle';
+import { NuevoEvento, type EventoAsignado } from './nuevo-evento/nuevo-evento';
 import {
   CATEGORIA_EVENTO,
   ESTADO_EVENTO,
@@ -35,8 +39,12 @@ type FiltroActivo = { etiqueta: string; valor: string; quitar: () => void };
  * A la vista solo la búsqueda por ciudadano; estado, fechas, agente, unidad, denominación y tramo
  * van en el panel de filtros avanzados (aplicados: chips). Las opciones de los selectores vienen
  * de GET /eventos/filtros. Un clic en la fila abre el detalle; clic derecho o ⋯, sus opciones.
- * Los filtros iniciales pueden llegar en la URL (desde, hasta, agenteId, unidadId, denominacionId,
- * tramoId): así abre, por ejemplo, el panel de estadísticas del inicio.
+ * Los filtros, la página y el evento abierto viven en la URL (estado, desde, hasta, agenteId,
+ * unidadId, denominacionId, tramoId, ciudadano, pagina, evento): sobreviven a recargar, se pueden
+ * compartir (p. ej. el enlace a un evento) y así abre el panel de estadísticas del inicio.
+ * Con el permiso eventos.asignar, el call center crea aquí un evento y lo asigna a una unidad
+ * disponible (que lo recibe como pendiente, con notificación).
+ * Desde las opciones de la fila se imprime el formulario de asistencia (PDF que genera la API).
  */
 @Component({
   selector: 'app-eventos',
@@ -55,6 +63,8 @@ type FiltroActivo = { etiqueta: string; valor: string; quitar: () => void };
     Icon,
     MenuContextual,
     EventoDetalle,
+    NuevoEvento,
+    HasPermissionDirective,
   ],
   templateUrl: './eventos.html',
 })
@@ -65,19 +75,22 @@ export class Eventos {
   protected readonly fechaHora = fechaHora;
   protected readonly tamano = TAMANO_PAGINA;
 
-  private readonly url = inject(ActivatedRoute).snapshot.queryParamMap;
+  private readonly ruta = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly url = this.ruta.snapshot.queryParamMap;
+  private readonly http = inject(HttpClient);
 
-  protected readonly estado = signal<EstadoEvento | null>(null);
+  protected readonly estado = signal<EstadoEvento | null>(estadoDeUrl(this.url.get('estado')));
   protected readonly desde = signal(fechaDeUrl(this.url.get('desde')));
   protected readonly hasta = signal(fechaDeUrl(this.url.get('hasta')));
   protected readonly agenteId = signal(idDeUrl(this.url.get('agenteId')));
   protected readonly unidadId = signal(idDeUrl(this.url.get('unidadId')));
   protected readonly denominacionId = signal(idDeUrl(this.url.get('denominacionId')));
   protected readonly tramoId = signal(idDeUrl(this.url.get('tramoId')));
-  protected readonly ciudadano = signal('');
+  protected readonly ciudadano = signal(this.url.get('ciudadano')?.trim() ?? '');
 
   // Vuelve a la primera página cada vez que cambia un filtro
-  protected readonly pagina = linkedSignal({
+  protected readonly pagina = linkedSignal<unknown[], number>({
     source: () => [
       this.estado(),
       this.desde(),
@@ -88,7 +101,8 @@ export class Eventos {
       this.tramoId(),
       this.ciudadano(),
     ],
-    computation: () => 1,
+    // Al entrar, la de la URL; después, cada cambio de filtro vuelve a la 1
+    computation: (_filtros, previo) => (previo ? 1 : (idDeUrl(this.url.get('pagina')) ?? 1)),
   });
 
   protected readonly hayFiltros = computed(() => this.filtrosActivos().length > 0 || !!this.ciudadano());
@@ -150,14 +164,39 @@ export class Eventos {
   protected readonly avanzadosAbiertos = signal(this.filtrosActivos().length > 0);
 
   /** Evento abierto en el diálogo de detalle. */
-  protected readonly detalleId = signal<number | null>(null);
+  protected readonly detalleId = signal<number | null>(idDeUrl(this.url.get('evento')));
+
+  // Call center (permiso eventos.asignar): crear un evento y asignarlo a una unidad
+  protected readonly permisoAsignar = Permisos.AsignarEventos;
+  protected readonly nuevoEventoAbierto = signal(false);
+  private readonly avisos = inject(AvisosService);
 
   private readonly menu = viewChild.required(MenuContextual);
+
+  constructor() {
+    // Estado de la página → URL (sin apilar historial: "Atrás" sale de Eventos, no deshace filtros)
+    effect(() => {
+      const queryParams: Record<string, string | number | null> = {
+        estado: this.estado(),
+        desde: this.desde() || null,
+        hasta: this.hasta() || null,
+        agenteId: this.agenteId(),
+        unidadId: this.unidadId(),
+        denominacionId: this.denominacionId(),
+        tramoId: this.tramoId(),
+        ciudadano: this.ciudadano() || null,
+        pagina: this.pagina() > 1 ? this.pagina() : null,
+        evento: this.detalleId(),
+      };
+      void this.router.navigate([], { relativeTo: this.ruta, queryParams, replaceUrl: true });
+    });
+  }
 
   /** Opciones de una fila: desde el botón ⋯ de la columna Opciones o con clic derecho sobre la fila. */
   protected abrirOpciones(evento: MouseEvent, item: EventoListItem): void {
     const opciones: OpcionMenu[] = [
       { label: 'Ver detalle', icono: 'detalle', accion: () => this.detalleId.set(item.id) },
+      { label: 'Imprimir formulario (PDF)', icono: 'imprimir', accion: () => this.imprimirFormulario(item.id) },
     ];
     if (item.unidadId !== null && item.unidadId !== this.unidadId()) {
       const unidadId = item.unidadId;
@@ -174,9 +213,59 @@ export class Eventos {
     opciones.push({
       label: 'Copiar N.º de evento',
       icono: 'copiar',
-      accion: () => void navigator.clipboard?.writeText(String(item.id)),
+      accion: () => this.copiar(item.id),
     });
     this.menu().abrir(evento, opciones, `Evento #${item.id}`);
+  }
+
+  /**
+   * Formulario de asistencia (APVI-FOR-003) del evento: se abre en otra pestaña, en el visor de PDF
+   * del navegador (imprimir, guardar). Si el navegador bloquea la pestaña, se descarga.
+   */
+  protected imprimirFormulario(id: number): void {
+    // La pestaña se abre ya, dentro del clic: abierta al llegar el PDF, el navegador la bloquearía
+    const pestana = window.open('', '_blank');
+    pestana?.document.write('<p style="font-family: sans-serif; padding: 24px">Generando el formulario de asistencia…</p>');
+
+    this.http.get(`${environment.apiUrl}/eventos/${id}/reporte`, { responseType: 'blob' }).subscribe({
+      next: (pdf) => {
+        const url = URL.createObjectURL(pdf);
+        if (pestana) {
+          pestana.location.href = url;
+        } else {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `asistencia-${id}.pdf`;
+          a.click();
+        }
+        // Margen para que la pestaña termine de cargarlo antes de liberar la URL
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      },
+      error: (error: unknown) => {
+        pestana?.close();
+        this.avisos.error(`No se pudo generar el formulario del evento #${id}: ${mensajeDeError(error)}`);
+      },
+    });
+  }
+
+  private copiar(id: number): void {
+    if (!navigator.clipboard) return void this.avisos.error('El navegador no permite copiar al portapapeles.');
+    navigator.clipboard.writeText(String(id)).then(
+      () => this.avisos.exito(`N.º de evento ${id} copiado.`),
+      () => this.avisos.error('No se pudo copiar al portapapeles.'),
+    );
+  }
+
+  /** El evento nuevo queda pendiente en la unidad: se avisa si recibió la notificación y se recarga el listado. */
+  protected asignado(evento: EventoAsignado): void {
+    this.nuevoEventoAbierto.set(false);
+    const destino = `${evento.ficha || 'la unidad'}${evento.agente ? ` (${evento.agente})` : ''}`;
+    this.avisos.exito(
+      evento.notificada
+        ? `Evento No. ${evento.id} asignado a ${destino}. La unidad recibió la notificación.`
+        : `Evento No. ${evento.id} asignado a ${destino}. La unidad no tiene la app conectada: lo verá como pendiente al abrirla.`,
+    );
+    this.eventos.reload();
   }
 
   protected cambiarEstado(valor: string): void {
@@ -199,6 +288,12 @@ export class Eventos {
 function idDeUrl(valor: string | null): number | null {
   const id = Number(valor);
   return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+/** Estado de evento de un query param, o null si falta o no es uno conocido. */
+function estadoDeUrl(valor: string | null): EstadoEvento | null {
+  const estado = Number(valor) as EstadoEvento;
+  return Object.values(EstadoEvento).includes(estado) ? estado : null;
 }
 
 /** Fecha yyyy-MM-dd de un query param, o vacío si falta o no tiene ese formato. */

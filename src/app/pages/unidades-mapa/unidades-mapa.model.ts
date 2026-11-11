@@ -19,6 +19,10 @@ export type PosicionUnidad = {
   agenteId: number;
   agente: string;
   rango: string;
+  /** Segundo agente de la unidad (componente), si opera con uno. */
+  componenteId: number | null;
+  componente: string | null;
+  componenteRango: string | null;
   latitud: number;
   longitud: number;
   precisionMetros: number | null;

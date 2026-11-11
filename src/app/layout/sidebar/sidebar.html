@@ -27,7 +27,7 @@
           <a
             [routerLink]="item.path"
             routerLinkActive="bg-white/10 text-white before:opacity-100"
-            [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+            [routerLinkActiveOptions]="{ exact: item.path === '/' || !!item.exacto }"
             [title]="item.label"
             [attr.aria-label]="item.label"
             class="relative flex h-11 items-center justify-center gap-3 rounded-xl px-3 text-sm font-semibold text-primary-100 transition-colors before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r-full before:bg-accent-500 before:opacity-0 before:transition-opacity hover:bg-white/5 hover:text-white lg:justify-start"
@@ -60,10 +60,27 @@
         title="Cerrar sesión"
         aria-label="Cerrar sesión"
         class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-primary-200 transition-colors hover:bg-white/10 hover:text-white"
-        (click)="auth.logout()"
+        (click)="confirmandoSalida.set(true)"
       >
         <app-icon name="salir" class="h-5 w-5" />
       </button>
     </div>
   </div>
 </aside>
+
+<app-dialogo
+  [abierto]="confirmandoSalida()"
+  titulo="Cerrar sesión"
+  (cerrar)="confirmandoSalida.set(false)"
+>
+  <p class="text-sm text-neutral-600">
+    ¿Seguro que deseas cerrar sesión? Tendrás que volver a iniciar sesión para continuar.
+  </p>
+
+  <app-button dialogoAcciones variant="ghost" [bloque]="false" (click)="confirmandoSalida.set(false)">
+    Cancelar
+  </app-button>
+  <app-button dialogoAcciones variant="danger" [bloque]="false" (click)="cerrarSesion()">
+    Cerrar sesión
+  </app-button>
+</app-dialogo>

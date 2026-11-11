@@ -1,9 +1,20 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
 
 import { environment } from '../../../../environments/environment';
 import { ApiError } from '../../../core/models/api-error';
+import { huella } from '../../../core/utils/huella';
 import { mensajeDeError } from '../../../core/utils/formato';
 import { Button } from '../../../shared/components/button/button';
 import { Dialogo, DialogoAcciones } from '../../../shared/components/dialogo/dialogo';
@@ -58,6 +69,11 @@ export class AsignarDenominacion {
   readonly inicio = input<InicioAsignacion | null>(null);
   readonly opciones = input<OpcionesAsignacion | undefined>();
   readonly cerrar = output();
+
+  private readonly dialogo = viewChild.required(Dialogo);
+  /** Contenido del formulario al abrirlo: si cambia, cerrar pide confirmación. */
+  private readonly huellaInicial = signal('');
+  protected readonly sucio = computed(() => huella(this.form()) !== this.huellaInicial());
   readonly asignado = output<AsignacionResultado>();
 
   protected readonly motivoMax = MOTIVO_MAX;
@@ -71,7 +87,13 @@ export class AsignarDenominacion {
     (this.opciones()?.unidades ?? []).map((u) => ({
       id: u.id,
       nombre: u.ficha,
-      detalle: [u.denominacion ?? 'Sin denominación', u.placa, u.estaDisponible ? null : 'No disponible'].filter(Boolean).join(' · '),
+      detalle: [
+        u.denominacion ?? 'Sin denominación',
+        u.placa,
+        u.estaDisponible ? null : 'No disponible',
+      ]
+        .filter(Boolean)
+        .join(' · '),
     })),
   );
   protected readonly opcionesDenominacion = computed<OpcionSelector[]>(() =>
@@ -81,15 +103,21 @@ export class AsignarDenominacion {
       detalle: `${d.nivelDenominacion} · ${d.tramo} · ${d.unidadFicha ? 'En uso por ' + d.unidadFicha : 'Libre'}`,
     })),
   );
-  protected readonly opcionesTramo = computed<OpcionSelector[]>(() => opcionesDeTramo(this.opciones()));
+  protected readonly opcionesTramo = computed<OpcionSelector[]>(() =>
+    (this.opciones()?.tramos ?? []).map((t) => ({ id: t.id, nombre: t.nombre, detalle: t.zona })),
+  );
 
   private readonly unidad = computed(() => {
     const f = this.form();
-    return f.modoUnidad === 'existente' ? this.opciones()?.unidades.find((u) => u.id === f.unidadId) : undefined;
+    return f.modoUnidad === 'existente'
+      ? this.opciones()?.unidades.find((u) => u.id === f.unidadId)
+      : undefined;
   });
   private readonly denominacion = computed(() => {
     const f = this.form();
-    return f.modoDenominacion === 'existente' ? this.opciones()?.denominaciones.find((d) => d.id === f.denominacionId) : undefined;
+    return f.modoDenominacion === 'existente'
+      ? this.opciones()?.denominaciones.find((d) => d.id === f.denominacionId)
+      : undefined;
   });
 
   /** Qué va a pasar al confirmar (lo mismo que hará la API). */
@@ -100,7 +128,10 @@ export class AsignarDenominacion {
     return {
       yaLaTiene,
       /** Ficha que perderá la denominación. */
-      desplazada: denominacion?.unidadFicha && denominacion.unidadId !== unidad?.id ? denominacion.unidadFicha : null,
+      desplazada:
+        denominacion?.unidadFicha && denominacion.unidadId !== unidad?.id
+          ? denominacion.unidadFicha
+          : null,
       /** Denominación que deja la unidad (queda libre). */
       anterior: unidad?.denominacion && !yaLaTiene ? unidad.denominacion : null,
     };
@@ -140,6 +171,7 @@ export class AsignarDenominacion {
           unidadId: inicio.unidadId ?? null,
           denominacionId: inicio.denominacionId ?? null,
         });
+        this.huellaInicial.set(huella(this.form()));
         this.intentado.set(false);
         this.erroresApi.set({});
         this.errorGeneral.set(null);
@@ -161,7 +193,7 @@ export class AsignarDenominacion {
   }
 
   protected cancelar(): void {
-    if (!this.guardando()) this.cerrar.emit();
+    this.dialogo().solicitarCierre();
   }
 
   protected guardar(): void {
@@ -171,7 +203,10 @@ export class AsignarDenominacion {
     const f = this.form();
     const body = {
       unidadId: f.modoUnidad === 'existente' ? f.unidadId : null,
-      nuevaUnidad: f.modoUnidad === 'nueva' ? { ficha: f.ficha.trim().toUpperCase(), placa: f.placa.trim().toUpperCase() || null } : null,
+      nuevaUnidad:
+        f.modoUnidad === 'nueva'
+          ? { ficha: f.ficha.trim().toUpperCase(), placa: f.placa.trim().toUpperCase() || null }
+          : null,
       denominacionId: f.modoDenominacion === 'existente' ? f.denominacionId : null,
       nuevaDenominacion:
         f.modoDenominacion === 'nueva'
@@ -182,21 +217,25 @@ export class AsignarDenominacion {
 
     this.guardando.set(true);
     this.errorGeneral.set(null);
-    this.http.post<AsignacionResultado>(`${environment.apiUrl}/unidades/asignar-denominacion`, body).subscribe({
-      next: (resultado) => {
-        this.guardando.set(false);
-        this.asignado.emit(resultado);
-      },
-      error: (error: unknown) => {
-        this.guardando.set(false);
-        const errores = erroresPorClave(error instanceof ApiError ? error.errors : null);
-        this.erroresApi.set(errores);
-        // Lo que no es de un campo del formulario (409 ficha o nombre repetidos, unidad desactivada…) va arriba del pie
-        const otros = Object.entries(errores).filter(([clave]) => !CLAVES_CAMPOS.includes(clave)).map(([, m]) => m);
-        if (otros.length) this.errorGeneral.set(otros.join(' '));
-        else if (!Object.keys(errores).length) this.errorGeneral.set(mensajeDeError(error));
-      },
-    });
+    this.http
+      .post<AsignacionResultado>(`${environment.apiUrl}/unidades/asignar-denominacion`, body)
+      .subscribe({
+        next: (resultado) => {
+          this.guardando.set(false);
+          this.asignado.emit(resultado);
+        },
+        error: (error: unknown) => {
+          this.guardando.set(false);
+          const errores = erroresPorClave(error instanceof ApiError ? error.errors : null);
+          this.erroresApi.set(errores);
+          // Lo que no es de un campo del formulario (409 ficha o nombre repetidos, unidad desactivada…) va arriba del pie
+          const otros = Object.entries(errores)
+            .filter(([clave]) => !CLAVES_CAMPOS.includes(clave))
+            .map(([, m]) => m);
+          if (otros.length) this.errorGeneral.set(otros.join(' '));
+          else if (!Object.keys(errores).length) this.errorGeneral.set(mensajeDeError(error));
+        },
+      });
   }
 
   private vacio(): Formulario {
