@@ -23,8 +23,9 @@ import type { PermisoInfo, Usuario } from './usuarios.model';
 const TAMANO_PAGINA = 20;
 
 /**
- * Usuarios del front desk y sus permisos (GET /usuarios). "Nuevo usuario" abre el alta
- * (app-nuevo-usuario, POST /usuarios). "Permisos" abre un diálogo con el
+ * Usuarios del front desk (GET /usuarios). "Nuevo usuario" abre el alta
+ * (app-nuevo-usuario, POST /usuarios). Los permisos no se listan en la tabla: "Editar" abre un
+ * diálogo con los datos del usuario y el
  * catálogo (GET /usuarios/permisos) y guarda con PUT /usuarios/{id}/permisos. Los permisos viajan
  * en el token, así que el usuario los recibe al volver a iniciar sesión.
  */
@@ -92,7 +93,7 @@ export class Usuarios {
     this.usuarios.reload();
   }
 
-  // Diálogo de permisos
+  // Diálogo de edición (datos de solo lectura + permisos)
   protected readonly editando = signal<Usuario | null>(null);
   protected readonly seleccion = signal<ReadonlySet<string>>(new Set());
   protected readonly guardando = signal(false);
@@ -105,10 +106,6 @@ export class Usuarios {
     const nuevos = this.seleccion();
     return actuales.size !== nuevos.size || [...nuevos].some((p) => !actuales.has(p));
   });
-
-  protected modulo(permiso: string): string {
-    return this.modulos().get(permiso) ?? permiso;
-  }
 
   /** No se puede quitar uno mismo el permiso de gestionar usuarios (la API también lo impide). */
   protected bloqueado(permiso: string): boolean {

@@ -65,6 +65,7 @@ type Vista = 'unidades' | 'denominaciones';
     Alta,
     Historial,
     Importar,
+    NuevaZona,
   ],
   templateUrl: './unidades-denominacion.html',
 })

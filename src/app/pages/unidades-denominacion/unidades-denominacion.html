@@ -4,6 +4,9 @@
     <app-icon name="actualizar" class="h-4 w-4" /> Actualizar
   </app-button>
   <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirImportacion()">Cargar Excel</app-button>
+  @if (puedeGestionarZonas()) {
+  <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirZona()">+ Zona</app-button>
+  }
   <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirAlta('unidad')">+ Unidad</app-button>
   <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirAlta('denominacion')">+
     Denominación</app-button>
@@ -159,10 +162,8 @@
 
 <app-alta [tipo]="alta()" [opciones]="opcionesCargadas()" (cerrar)="alta.set(null)" (creado)="creado($event)" />
 
-<<<<<<< HEAD <app-nueva-zona [abierto]="creandoZona()" (cerrar)="creandoZona.set(false)"
-  (creada)="zonaCreada($event)" />
-=======
+<app-nueva-zona [abierto]="creandoZona()" (cerrar)="creandoZona.set(false)" (creada)="zonaCreada($event)" />
+
 <app-importar [abierto]="importando()" (cerrar)="importando.set(false)" (importado)="importado($event)" />
->>>>>>> a8f7e72accde3734c386d598cb9b4bec5fc81cac
 
 <app-historial [origen]="historialDe()" (cerrar)="historialDe.set(null)" />

@@ -1,6 +1,6 @@
 <app-module-page
   titulo="Usuarios"
-  descripcion="Usuarios del front desk y los permisos que tiene cada uno."
+  descripcion="Usuarios del front desk; sus permisos se ven y se cambian al editar cada uno."
   icono="usuarios"
 >
   <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="usuarios.isLoading()" (click)="usuarios.reload()">
@@ -33,7 +33,6 @@
                 <th>Cédula</th>
                 <th>Institución</th>
                 <th>Departamento</th>
-                <th>Permisos</th>
                 <th><span class="sr-only">Acciones</span></th>
               </tr>
             </thead>
@@ -58,23 +57,14 @@
                     <p class="text-xs text-neutral-500">{{ usuario.rango }}</p>
                   </td>
                   <td class="min-w-44">{{ usuario.departamento }}</td>
-                  <td class="min-w-56">
-                    <div class="flex flex-wrap gap-1">
-                      @for (p of usuario.permisos; track p) {
-                        <app-badge [tono]="p === permisoGestionar ? 'accent' : 'secondary'">{{ modulo(p) }}</app-badge>
-                      } @empty {
-                        <app-badge tono="neutral">Sin permisos</app-badge>
-                      }
-                    </div>
-                  </td>
                   <td class="text-right">
                     <button
                       type="button"
                       class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold whitespace-nowrap text-primary-600 hover:bg-primary-50"
-                      [attr.aria-label]="'Editar permisos de ' + (usuario.nombreCompleto || usuario.userName)"
+                      [attr.aria-label]="'Editar usuario ' + (usuario.nombreCompleto || usuario.userName)"
                       (click)="abrir(usuario)"
                     >
-                      <app-icon name="editar" class="h-4 w-4" /> Permisos
+                      <app-icon name="editar" class="h-4 w-4" /> Editar
                     </button>
                   </td>
                 </tr>
@@ -91,12 +81,40 @@
 <app-dialogo
   #dialogoPermisos
   [abierto]="!!editando()"
-  titulo="Permisos"
+  titulo="Editar usuario"
   [descripcion]="editando() ? (editando()!.nombreCompleto || editando()!.userName) + ' · ' + editando()!.userName : ''"
   [sucio]="hayCambios()"
   [ocupado]="guardando()"
   (cerrar)="editando.set(null)"
 >
+  @if (editando(); as u) {
+    <dl class="mb-6 grid grid-cols-2 gap-x-6 gap-y-3 rounded-xl bg-neutral-50 px-4 py-3 text-sm">
+      <div>
+        <dt class="text-xs font-bold tracking-wide text-neutral-500 uppercase">Cédula</dt>
+        <dd class="font-mono text-neutral-900">{{ u.identificacion }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs font-bold tracking-wide text-neutral-500 uppercase">Estado</dt>
+        <dd>
+          @if (u.bloqueado) {
+            <app-badge tono="danger">Bloqueado</app-badge>
+          } @else {
+            <app-badge tono="secondary">Activo</app-badge>
+          }
+        </dd>
+      </div>
+      <div>
+        <dt class="text-xs font-bold tracking-wide text-neutral-500 uppercase">Institución</dt>
+        <dd class="text-neutral-900">{{ INSTITUCION[u.institucion] ?? '—' }} <span class="text-neutral-500">· {{ u.rango }}</span></dd>
+      </div>
+      <div>
+        <dt class="text-xs font-bold tracking-wide text-neutral-500 uppercase">Departamento</dt>
+        <dd class="text-neutral-900">{{ u.departamento }}</dd>
+      </div>
+    </dl>
+  }
+
+  <h3 class="mb-1 text-sm font-bold text-neutral-900">Permisos</h3>
   @if (catalogo.error()) {
     <p class="rounded-xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700" role="alert">
       No se pudo cargar el catálogo de permisos. {{ catalogo.error()?.message }}
