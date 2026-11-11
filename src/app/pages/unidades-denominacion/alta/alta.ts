@@ -13,6 +13,7 @@ import {
   MENSAJE_FICHA,
   MENSAJE_PLACA,
   type OpcionesAsignacion,
+  opcionesDeTramo,
   PLACA_VALIDA,
 } from '../unidades-denominacion.model';
 
@@ -52,7 +53,7 @@ export class Alta {
   protected readonly erroresApi = signal<Record<string, string>>({});
   protected readonly errorGeneral = signal<string | null>(null);
 
-  protected readonly opcionesTramo = computed<OpcionSelector[]>(() => this.opciones()?.tramos ?? []);
+  protected readonly opcionesTramo = computed<OpcionSelector[]>(() => opcionesDeTramo(this.opciones()));
 
   protected readonly errores = computed(() => {
     const e: Partial<Record<Campo, string>> = {};

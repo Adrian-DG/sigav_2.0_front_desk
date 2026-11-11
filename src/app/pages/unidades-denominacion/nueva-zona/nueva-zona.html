@@ -1,0 +1,89 @@
+<app-dialogo
+  [abierto]="abierto()"
+  titulo="Nueva zona"
+  descripcion="Elija la región y agregue los tramos de la zona; quedarán disponibles al crear denominaciones."
+  (cerrar)="cancelar()"
+>
+  <form class="flex flex-col gap-4" novalidate (submit)="$event.preventDefault(); guardar()">
+    <fieldset class="flex flex-col gap-4" [disabled]="guardando()">
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Nombre</span>
+        <input
+          class="control"
+          placeholder="Samaná"
+          autocomplete="off"
+          [attr.maxlength]="nombreMax"
+          [class.border-danger-500]="error('nombre')"
+          [value]="nombre()"
+          (input)="nombre.set($any($event.target).value); limpiarErroresApi()"
+        />
+        @if (error('nombre'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-neutral-600">Región</span>
+        <app-selector
+          [opciones]="opcionesRegion"
+          placeholder="Buscar región…"
+          [deshabilitado]="guardando()"
+          [valor]="region()"
+          (valorChange)="region.set($event); limpiarErroresApi()"
+        />
+        @if (error('region'); as e) {
+          <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+        }
+      </label>
+
+      <div class="flex flex-col gap-2">
+        <span class="text-sm font-semibold text-neutral-600">
+          Tramos <span class="font-normal text-neutral-400">(opcional, Enter agrega otro)</span>
+        </span>
+        @for (t of tramos(); track $index; let i = $index) {
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center gap-2">
+              <input
+                class="control flex-1"
+                [id]="'tramo-' + i"
+                [attr.aria-label]="'Tramo ' + (i + 1)"
+                placeholder="Autopista Juan Pablo II"
+                autocomplete="off"
+                [attr.maxlength]="nombreMax"
+                [class.border-danger-500]="error('tramos[' + i + ']')"
+                [value]="t"
+                (input)="cambiarTramo(i, $any($event.target).value)"
+                (keydown.enter)="enterEnTramo($event, i)"
+              />
+              <button
+                type="button"
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-neutral-400 hover:bg-neutral-100 hover:text-danger-600"
+                [attr.aria-label]="'Quitar tramo ' + (i + 1)"
+                (click)="quitarTramo(i)"
+              >
+                ✕
+              </button>
+            </div>
+            @if (error('tramos[' + i + ']'); as e) {
+              <span class="text-xs font-medium text-danger-600">{{ e }}</span>
+            }
+          </div>
+        }
+        <button
+          type="button"
+          class="self-start rounded-lg px-2 py-1 text-sm font-bold text-primary-700 hover:bg-primary-50"
+          (click)="agregarTramo()"
+        >
+          + Agregar tramo
+        </button>
+      </div>
+    </fieldset>
+
+    @if (errorGeneral()) {
+      <p class="rounded-xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700" role="alert">{{ errorGeneral() }}</p>
+    }
+  </form>
+
+  <app-button dialogoAcciones variant="ghost" [bloque]="false" [disabled]="guardando()" (click)="cancelar()">Cancelar</app-button>
+  <app-button dialogoAcciones [bloque]="false" [loading]="guardando()" (click)="guardar()">Crear zona</app-button>
+</app-dialogo>

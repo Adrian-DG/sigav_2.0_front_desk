@@ -7,6 +7,14 @@ export const JERARQUIA: Record<number, { label: string; tono: TonoBadge }> = {
   3: { label: 'Unidad', tono: 'neutral' },
 };
 
+/** Domain/Enums RegionMacroEnum: región a la que pertenece una zona. */
+export const REGIONES: Record<number, string> = { 1: 'Este', 2: 'Norte', 3: 'Sur' };
+
+/** Opciones del selector de tramo: la zona va como detalle (se muestra y se busca). */
+export function opcionesDeTramo(opciones: OpcionesAsignacion | undefined): { id: number; nombre: string; detalle: string }[] {
+  return (opciones?.tramos ?? []).map((t) => ({ id: t.id, nombre: t.nombre, detalle: `Zona ${t.zona}` }));
+}
+
 /** Mirrors Application/Features/Operaciones/Unidades/UnidadViewModels.cs UnidadViewModel. */
 export type Unidad = {
   id: number;
@@ -48,7 +56,8 @@ export type OpcionesAsignacion = {
     unidadId: number | null;
     unidadFicha: string | null;
   }[];
-  tramos: { id: number; nombre: string }[];
+  /** zona: para distinguir el tramo y buscarlo también por su zona. */
+  tramos: { id: number; nombre: string; zona: string }[];
   niveles: { id: number; nombre: string; jerarquia: number }[];
 };
 

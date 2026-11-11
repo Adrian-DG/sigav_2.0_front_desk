@@ -6,6 +6,9 @@
   <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="cargando()" (click)="recargar()">
     <app-icon name="actualizar" class="h-4 w-4" /> Actualizar
   </app-button>
+  @if (puedeGestionarZonas()) {
+    <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirZona()">+ Zona</app-button>
+  }
   <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirAlta('unidad')">+ Unidad</app-button>
   <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirAlta('denominacion')">+ Denominación</app-button>
   <app-button moduloAcciones [bloque]="false" (click)="abrirAsignacion()">Asignar denominación</app-button>
@@ -193,5 +196,7 @@
 />
 
 <app-alta [tipo]="alta()" [opciones]="opcionesCargadas()" (cerrar)="alta.set(null)" (creado)="creado($event)" />
+
+<app-nueva-zona [abierto]="creandoZona()" (cerrar)="creandoZona.set(false)" (creada)="zonaCreada($event)" />
 
 <app-historial [origen]="historialDe()" (cerrar)="historialDe.set(null)" />

@@ -15,6 +15,7 @@ import {
   MENSAJE_FICHA,
   MENSAJE_PLACA,
   type OpcionesAsignacion,
+  opcionesDeTramo,
   PLACA_VALIDA,
 } from '../unidades-denominacion.model';
 
@@ -80,7 +81,7 @@ export class AsignarDenominacion {
       detalle: `${d.nivelDenominacion} · ${d.tramo} · ${d.unidadFicha ? 'En uso por ' + d.unidadFicha : 'Libre'}`,
     })),
   );
-  protected readonly opcionesTramo = computed<OpcionSelector[]>(() => this.opciones()?.tramos ?? []);
+  protected readonly opcionesTramo = computed<OpcionSelector[]>(() => opcionesDeTramo(this.opciones()));
 
   private readonly unidad = computed(() => {
     const f = this.form();

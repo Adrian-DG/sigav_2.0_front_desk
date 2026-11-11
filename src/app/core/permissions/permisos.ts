@@ -8,6 +8,7 @@ export const Permisos = {
   Eventos: 'eventos.ver',
   Agentes: 'agentes.ver',
   UnidadesDenominacion: 'unidades.ver',
+  ZonasGestionar: 'zonas.gestionar',
   Usuarios: 'usuarios.gestionar',
 } as const;
 

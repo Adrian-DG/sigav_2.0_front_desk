@@ -1,8 +1,10 @@
 import { httpResource } from '@angular/common/http';
-import { Component, computed, linkedSignal, signal } from '@angular/core';
+import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
 
 import { environment } from '../../../environments/environment';
 import type { PagedResult } from '../../core/models/paged-result';
+import { Permisos } from '../../core/permissions/permisos';
+import { AuthService } from '../../core/services/auth.service';
 import { mensajeDeError } from '../../core/utils/formato';
 import { Badge } from '../../shared/components/badge/badge';
 import { Busqueda } from '../../shared/components/busqueda/busqueda';
@@ -14,6 +16,7 @@ import { ModulePage, ModuloAcciones, ModuloFiltros } from '../../shared/componen
 import { Paginador } from '../../shared/components/paginador/paginador';
 import { Alta, type TipoAlta } from './alta/alta';
 import { Historial, type OrigenHistorial } from './historial/historial';
+import { NuevaZona } from './nueva-zona/nueva-zona';
 import { AsignarDenominacion, type InicioAsignacion } from './asignar-denominacion/asignar-denominacion';
 import {
   type AsignacionResultado,
@@ -51,6 +54,7 @@ type Vista = 'unidades' | 'denominaciones';
     AsignarDenominacion,
     Alta,
     Historial,
+    NuevaZona,
   ],
   templateUrl: './unidades-denominacion.html',
 })
@@ -61,6 +65,10 @@ export class UnidadesDenominacion {
     { valor: 'unidades', label: 'Unidades' },
     { valor: 'denominaciones', label: 'Denominaciones' },
   ];
+
+  /** Crear zonas (con sus tramos) requiere zonas.gestionar; la API lo vuelve a exigir. */
+  private readonly auth = inject(AuthService);
+  protected readonly puedeGestionarZonas = computed(() => this.auth.permisos().includes(Permisos.ZonasGestionar));
 
   protected readonly vista = signal<Vista>('unidades');
   // Cada vista busca sobre campos distintos: al cambiar de vista la búsqueda empieza vacía
@@ -147,6 +155,20 @@ export class UnidadesDenominacion {
   protected creado(texto: string): void {
     this.alta.set(null);
     this.terminar(texto);
+  }
+
+  protected readonly creandoZona = signal(false);
+
+  protected abrirZona(): void {
+    this.aviso.set(null);
+    this.creandoZona.set(true);
+  }
+
+  protected zonaCreada(texto: string): void {
+    this.creandoZona.set(false);
+    this.aviso.set(texto);
+    // Los tramos nuevos deben aparecer al crear la próxima denominación
+    if (this.usado()) this.opciones.reload();
   }
 
   private prepararDialogo(): void {
