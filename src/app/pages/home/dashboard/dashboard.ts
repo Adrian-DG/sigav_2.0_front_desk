@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
+import { alCambiar } from '../../../core/services/tiempo-real.service';
 import { diasDelRango, fechaCorta, hoyRD, mensajeDeError, sumarDias } from '../../../core/utils/formato';
 import { Icon } from '../../../shared/components/icon/icon';
 import { CategoriaEvento } from '../../eventos/eventos.model';
@@ -317,6 +318,9 @@ export class Dashboard {
       if (this.autoRefresco() && document.visibilityState === 'visible') this.refrescar();
     }, REFRESCO_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(intervalo));
+
+    // Con la conexión en vivo los indicadores siguen a los eventos (agrupando ráfagas)
+    alCambiar('eventos', () => this.autoRefresco() && this.refrescar(), { esperaMs: 10_000 });
   }
 
   protected elegirPeriodo(periodo: Periodo): void {

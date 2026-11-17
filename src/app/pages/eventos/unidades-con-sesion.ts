@@ -2,6 +2,7 @@ import { httpResource } from '@angular/common/http';
 import { DestroyRef, computed, inject, linkedSignal } from '@angular/core';
 
 import { environment } from '../../../environments/environment';
+import { alCambiar } from '../../core/services/tiempo-real.service';
 import { mensajeDeError } from '../../core/utils/formato';
 import type { UnidadDisponibilidad } from './asignacion.model';
 
@@ -26,6 +27,8 @@ export function unidadesConSesion(abierto: () => boolean) {
     if (abierto() && document.visibilityState === 'visible' && !recurso.isLoading()) recurso.reload();
   }, INTERVALO_ACTUALIZACION_MS);
   inject(DestroyRef).onDestroy(() => clearInterval(recargar));
+  // Al recibir o cerrar un evento la unidad cambia de disponibilidad: se refleja al momento
+  alCambiar('unidades', () => abierto() && recurso.reload(), { esperaMs: 3_000 });
 
   return {
     lista: computed(() => datos() ?? []),

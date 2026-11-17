@@ -53,7 +53,10 @@
       </div>
       <div class="hidden min-w-0 flex-1 lg:block">
         <p class="truncate text-sm font-semibold">{{ auth.sesion()?.nombre ?? 'Usuario' }}</p>
-        <p class="text-xs text-primary-300">Sesión web</p>
+        <p class="flex items-center gap-1.5 text-xs text-primary-300" [title]="enVivo().detalle">
+          <span class="h-2 w-2 shrink-0 rounded-full" [class]="enVivo().punto" aria-hidden="true"></span>
+          {{ enVivo().texto }}
+        </p>
       </div>
       <button
         type="button"

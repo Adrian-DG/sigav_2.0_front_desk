@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { itemsVisibles } from '../../core/navigation/navigation';
 import { AuthService } from '../../core/services/auth.service';
+import { TiempoRealService } from '../../core/services/tiempo-real.service';
 import { Button } from '../../shared/components/button/button';
 import { Dialogo, DialogoAcciones } from '../../shared/components/dialogo/dialogo';
 import { Icon } from '../../shared/components/icon/icon';
@@ -24,6 +25,23 @@ export class Sidebar {
   protected readonly confirmandoSalida = signal(false);
 
   protected readonly items = computed(() => itemsVisibles(this.auth.permisos()));
+
+  /** Estado de la conexión en tiempo real (las pantallas se actualizan solas mientras está "En vivo"). */
+  private readonly tiempoReal = inject(TiempoRealService);
+  protected readonly enVivo = computed(() => {
+    switch (this.tiempoReal.estado()) {
+      case 'conectado':
+        return { texto: 'En vivo', punto: 'bg-emerald-400', detalle: 'Las pantallas se actualizan al momento.' };
+      case 'conectando':
+        return { texto: 'Conectando…', punto: 'bg-amber-400 animate-pulse', detalle: 'Reconectando la actualización en vivo.' };
+      default:
+        return {
+          texto: 'Sin conexión en vivo',
+          punto: 'bg-primary-400',
+          detalle: 'Las pantallas se actualizan cada cierto tiempo hasta que vuelva la conexión.',
+        };
+    }
+  });
 
   protected readonly iniciales = computed(() => {
     const nombre = this.auth.sesion()?.nombre?.trim();

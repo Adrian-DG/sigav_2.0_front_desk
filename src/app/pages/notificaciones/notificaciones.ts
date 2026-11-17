@@ -3,6 +3,7 @@ import { Component, DestroyRef, computed, inject, linkedSignal, signal } from '@
 
 import { environment } from '../../../environments/environment';
 import { AvisosService } from '../../core/services/avisos.service';
+import { alCambiar } from '../../core/services/tiempo-real.service';
 import { mensajeDeError } from '../../core/utils/formato';
 import { Badge } from '../../shared/components/badge/badge';
 import { Busqueda } from '../../shared/components/busqueda/busqueda';
@@ -66,6 +67,7 @@ export class Notificaciones {
       if (document.visibilityState === 'visible' && !this.recurso.isLoading()) this.recurso.reload();
     }, INTERVALO_ACTUALIZACION_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(recargar));
+    alCambiar('unidades', () => !this.recurso.isLoading() && this.recurso.reload(), { esperaMs: 5_000 });
   }
 
   protected enviada(resultado: EnviarNotificacionResult): void {

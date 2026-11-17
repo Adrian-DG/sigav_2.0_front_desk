@@ -15,6 +15,7 @@ import type * as Leaflet from 'leaflet';
 
 import { environment } from '../../../environments/environment';
 import { AvisosService } from '../../core/services/avisos.service';
+import { alCambiar } from '../../core/services/tiempo-real.service';
 import { fechaHora, mensajeDeError } from '../../core/utils/formato';
 import { Badge } from '../../shared/components/badge/badge';
 import { Busqueda } from '../../shared/components/busqueda/busqueda';
@@ -147,6 +148,8 @@ export class UnidadesMapa {
     }, INTERVALO_ACTUALIZACION_MS);
     const reloj = setInterval(() => this.ahora.set(Date.now() + this.desfaseMs), 5_000);
     const alVolver = () => document.visibilityState === 'visible' && this.posiciones.reload();
+    // Cada reporte GPS, inicio/cierre de sesión o cambio de disponibilidad mueve el mapa al momento
+    alCambiar('unidades', () => !this.posiciones.isLoading() && this.posiciones.reload(), { esperaMs: 3_000 });
     document.addEventListener('visibilitychange', alVolver);
     inject(DestroyRef).onDestroy(() => {
       clearInterval(recargar);

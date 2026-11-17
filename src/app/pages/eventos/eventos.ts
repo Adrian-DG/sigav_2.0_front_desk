@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { environment } from '../../../environments/environment';
 import { AvisosService } from '../../core/services/avisos.service';
+import { alCambiar } from '../../core/services/tiempo-real.service';
 import type { PagedResult } from '../../core/models/paged-result';
 import { Permisos } from '../../core/permissions/permisos';
 import { fechaCorta, fechaHora, mensajeDeError } from '../../core/utils/formato';
@@ -174,6 +175,9 @@ export class Eventos {
   private readonly menu = viewChild.required(MenuContextual);
 
   constructor() {
+    // Eventos nuevos o que cambian de estado aparecen sin recargar (se mantiene la página y los filtros)
+    alCambiar('eventos', () => this.eventos.reload());
+
     // Estado de la página → URL (sin apilar historial: "Atrás" sale de Eventos, no deshace filtros)
     effect(() => {
       const queryParams: Record<string, string | number | null> = {

@@ -6,6 +6,7 @@ import { environment } from '../../../environments/environment';
 import type { PagedResult } from '../../core/models/paged-result';
 import { Permisos } from '../../core/permissions/permisos';
 import { AvisosService } from '../../core/services/avisos.service';
+import { alCambiar } from '../../core/services/tiempo-real.service';
 import { fechaHora, hoyRD, mensajeDeError, sumarDias } from '../../core/utils/formato';
 import { Badge } from '../../shared/components/badge/badge';
 import { Busqueda } from '../../shared/components/busqueda/busqueda';
@@ -114,6 +115,11 @@ export class Calidad {
 
   protected estadoDe(item: BandejaCalidadItem): EstadoEvaluacion {
     return item.estadoEvaluacion ?? EstadoEvaluacion.Pendiente;
+  }
+
+  constructor() {
+    // Los eventos que se completan entran a la bandeja sin recargar
+    alCambiar('eventos', () => this.cambioEnEvaluacion(), { esperaMs: 10_000 });
   }
 
   protected cambioEnEvaluacion(): void {

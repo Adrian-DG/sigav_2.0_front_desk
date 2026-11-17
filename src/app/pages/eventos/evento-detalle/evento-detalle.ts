@@ -2,6 +2,7 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed, input, linkedSignal, output } from '@angular/core';
 
 import { environment } from '../../../../environments/environment';
+import { alCambiar } from '../../../core/services/tiempo-real.service';
 import { fechaHora, mensajeDeError } from '../../../core/utils/formato';
 import { Badge } from '../../../shared/components/badge/badge';
 import { Button } from '../../../shared/components/button/button';
@@ -49,6 +50,11 @@ export class EventoDetalle {
   protected readonly detalle = computed(() =>
     this.evento.hasValue() && this.evento.value().id === this.eventoId() ? this.evento.value() : null,
   );
+
+  constructor() {
+    // El evento abierto se actualiza si la unidad lo inicia, agrega evidencias o lo completa
+    alCambiar('eventos', () => this.evento.reload(), { id: () => this.eventoId() });
+  }
 
   /** Evidencia mostrada en grande (null: la cuadrícula de miniaturas). */
   protected readonly ampliada = linkedSignal<number | null, Evidencia | null>({

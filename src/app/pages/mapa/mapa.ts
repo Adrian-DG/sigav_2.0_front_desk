@@ -14,6 +14,7 @@ import {
 import type * as Leaflet from 'leaflet';
 
 import { environment } from '../../../environments/environment';
+import { alCambiar } from '../../core/services/tiempo-real.service';
 import { diasDelRango, fechaCorta, fechaHora, hoyRD, mensajeDeError, sumarDias } from '../../core/utils/formato';
 import { Button } from '../../shared/components/button/button';
 import { Filtro } from '../../shared/components/filtro/filtro';
@@ -157,6 +158,8 @@ export class Mapa {
   constructor() {
     afterNextRender(() => void this.iniciarMapa());
     inject(DestroyRef).onDestroy(() => this.mapa?.remove());
+    // Los eventos nuevos se suman al mapa sin esperar a que se cambie el período
+    alCambiar('eventos', () => this.mapaEventos.reload(), { esperaMs: 5_000 });
 
     // Redibuja las capas cuando cambian los datos o lo que se quiere ver
     effect(() => {
