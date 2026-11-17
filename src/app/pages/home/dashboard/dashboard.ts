@@ -8,11 +8,13 @@ import { environment } from '../../../../environments/environment';
 import { alCambiar } from '../../../core/services/tiempo-real.service';
 import { diasDelRango, fechaCorta, hoyRD, mensajeDeError, sumarDias } from '../../../core/utils/formato';
 import { Icon } from '../../../shared/components/icon/icon';
-import { CategoriaEvento } from '../../eventos/eventos.model';
+import { CategoriaEvento, EstadoEvento } from '../../eventos/eventos.model';
 import {
   type Estadisticas,
   REGION_MACRO,
   type Resumen,
+  type Tiempos,
+  minutos,
   total,
 } from './estadisticas.model';
 
@@ -67,6 +69,8 @@ export class Dashboard {
   protected readonly circunferencia = CIRCUNFERENCIA;
   protected readonly radio = RADIO;
   protected readonly fechaCorta = fechaCorta;
+  protected readonly minutos = minutos;
+  protected readonly filtroPendientes = { estado: EstadoEvento.Pendiente };
   protected readonly periodos: { valor: Periodo; label: string }[] = [
     { valor: 'hoy', label: 'Hoy' },
     { valor: 'ayer', label: 'Ayer' },
@@ -190,6 +194,40 @@ export class Dashboard {
       unidades: this.unidadesConEventos().length,
     };
   });
+
+  /**
+   * Tiempos de respuesta del nivel elegido, comparados con el período anterior. En los tiempos
+   * bajar es mejorar (la flecha hacia abajo va en verde); en el cumplimiento, subir.
+   */
+  protected readonly tiempos = computed(() => {
+    const t = this.resumen()?.tiempos ?? SIN_TIEMPOS;
+    const a = this.resumenAnterior()?.tiempos ?? null;
+    // Tiempos en minutos enteros; el cumplimiento en puntos porcentuales con un decimal
+    const delta = (actual: number | null, previo: number | null | undefined, decimales = 0) => {
+      if (actual === null || previo === null || previo === undefined) return null;
+      const f = 10 ** decimales;
+      return Math.round((actual - previo) * f) / f;
+    };
+    return {
+      t,
+      metas: this.datos()?.metas ?? null,
+      llegadaDelta: delta(t.llegadaMedianaMinutos, a?.llegadaMedianaMinutos),
+      atencionDelta: delta(t.atencionMedianaMinutos, a?.atencionMedianaMinutos),
+      cumplimientoDelta: delta(t.cumplimientoPorcentaje, a?.cumplimientoPorcentaje, 1),
+      llegadaPrevia: a?.llegadaMedianaMinutos ?? null,
+      atencionPrevia: a?.atencionMedianaMinutos ?? null,
+      cumplimientoPrevio: a?.cumplimientoPorcentaje ?? null,
+      evaluadas: t.dentroDeMeta + t.fueraDeMeta + t.pendientesVencidos,
+    };
+  });
+
+  /** Color del cumplimiento: verde desde 90 %, ámbar desde 75 %, rojo debajo. */
+  protected tonoCumplimiento(pct: number | null): string {
+    if (pct === null) return 'text-neutral-400';
+    if (pct >= 90) return 'text-secondary-600';
+    if (pct >= 75) return 'text-warning-700';
+    return 'text-danger-600';
+  }
 
   /** Dona por categoría. Un evento puede ser de ambas: la suma puede superar el total. */
   protected readonly dona = computed(() => {
@@ -360,7 +398,21 @@ function resumenDe(datos: Estadisticas | undefined, { zonaId, tramoId }: Selecci
   return zona.tramos.find((t) => t.tramoId === tramoId)?.resumen ?? VACIO;
 }
 
-const VACIO: Resumen = { totalEventos: 0, porCategoria: [], porTipo: [] };
+const SIN_TIEMPOS: Tiempos = {
+  llegadasMedidas: 0,
+  llegadaPromedioMinutos: null,
+  llegadaMedianaMinutos: null,
+  llegadaP90Minutos: null,
+  atencionesMedidas: 0,
+  atencionPromedioMinutos: null,
+  atencionMedianaMinutos: null,
+  dentroDeMeta: 0,
+  fueraDeMeta: 0,
+  pendientesVencidos: 0,
+  cumplimientoPorcentaje: null,
+};
+
+const VACIO: Resumen = { totalEventos: 0, porCategoria: [], porTipo: [], tiempos: SIN_TIEMPOS };
 
 /** Variación porcentual respecto del período anterior; null si no hay con qué comparar. */
 function variacion(valor: number, previo: number | null): number | null {

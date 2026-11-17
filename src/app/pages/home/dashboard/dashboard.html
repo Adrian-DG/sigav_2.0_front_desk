@@ -122,6 +122,91 @@
         </div>
       </div>
 
+      <!-- Tiempos de respuesta -->
+      <div class="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 class="text-sm font-bold text-neutral-900">Tiempos de respuesta</h3>
+          @if (tiempos().metas; as m) {
+            <span class="text-xs text-neutral-500">
+              Meta de llegada: accidentes {{ m.accidenteMinutos }} min · asistencias {{ m.asistenciaMinutos }} min
+            </span>
+          }
+        </div>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <!-- Llegada -->
+          <div class="flex flex-col rounded-xl bg-neutral-50 p-4">
+            <span class="text-xs font-bold tracking-wide text-neutral-500 uppercase">Llegada (mediana)</span>
+            <span class="mt-1 text-2xl font-extrabold text-neutral-900">{{ minutos(tiempos().t.llegadaMedianaMinutos) }}</span>
+            <span class="mt-1 text-xs text-neutral-500">
+              @if (tiempos().t.llegadasMedidas > 0) {
+                Promedio {{ minutos(tiempos().t.llegadaPromedioMinutos) }} · 9 de 10 en {{ minutos(tiempos().t.llegadaP90Minutos) }}
+              } @else {
+                Sin llegadas registradas en el período
+              }
+            </span>
+            <ng-container *ngTemplateOutlet="deltaTiempo; context: { d: tiempos().llegadaDelta, previo: tiempos().llegadaPrevia }" />
+          </div>
+
+          <!-- Cumplimiento -->
+          <div class="flex flex-col rounded-xl bg-neutral-50 p-4">
+            <span class="text-xs font-bold tracking-wide text-neutral-500 uppercase">Llegadas dentro de la meta</span>
+            <span class="mt-1 text-2xl font-extrabold" [class]="tonoCumplimiento(tiempos().t.cumplimientoPorcentaje)">
+              {{ tiempos().t.cumplimientoPorcentaje === null ? '—' : tiempos().t.cumplimientoPorcentaje + '%' }}
+            </span>
+            <span class="mt-1 text-xs text-neutral-500">
+              @if (tiempos().evaluadas > 0) {
+                {{ tiempos().t.dentroDeMeta }} de {{ tiempos().evaluadas }} eventos despachados
+              } @else {
+                Sin eventos despachados que evaluar
+              }
+            </span>
+            @if (tiempos().cumplimientoDelta !== null && tiempos().cumplimientoDelta !== 0) {
+              <span class="mt-auto pt-2 text-xs text-neutral-500">
+                <span class="font-bold" [class]="tiempos().cumplimientoDelta! > 0 ? 'text-secondary-700' : 'text-warning-800'">
+                  {{ tiempos().cumplimientoDelta! > 0 ? '↑ +' : '↓ ' }}{{ tiempos().cumplimientoDelta }} pts
+                </span>
+                vs. {{ comparadoCon() }} ({{ tiempos().cumplimientoPrevio }}%)
+              </span>
+            }
+          </div>
+
+          <!-- Pendientes vencidos -->
+          <div class="flex flex-col rounded-xl p-4" [class]="tiempos().t.pendientesVencidos > 0 ? 'bg-danger-50' : 'bg-neutral-50'">
+            <span class="text-xs font-bold tracking-wide text-neutral-500 uppercase">Pendientes fuera de meta</span>
+            <span
+              class="mt-1 text-2xl font-extrabold"
+              [class]="tiempos().t.pendientesVencidos > 0 ? 'text-danger-600' : 'text-neutral-900'"
+            >
+              {{ tiempos().t.pendientesVencidos }}
+            </span>
+            <span class="mt-1 text-xs text-neutral-500">Sin llegada de la unidad y ya superaron la meta</span>
+            @if (tiempos().t.pendientesVencidos > 0) {
+              <a
+                routerLink="/eventos"
+                [queryParams]="filtroEventos(filtroPendientes)"
+                class="mt-auto pt-2 text-xs font-bold text-danger-700 hover:underline"
+              >
+                Ver eventos pendientes →
+              </a>
+            }
+          </div>
+
+          <!-- Atención -->
+          <div class="flex flex-col rounded-xl bg-neutral-50 p-4">
+            <span class="text-xs font-bold tracking-wide text-neutral-500 uppercase">Duración de la atención</span>
+            <span class="mt-1 text-2xl font-extrabold text-neutral-900">{{ minutos(tiempos().t.atencionMedianaMinutos) }}</span>
+            <span class="mt-1 text-xs text-neutral-500">
+              @if (tiempos().t.atencionesMedidas > 0) {
+                Mediana de llegada a cierre · promedio {{ minutos(tiempos().t.atencionPromedioMinutos) }}
+              } @else {
+                Sin eventos completados en el período
+              }
+            </span>
+            <ng-container *ngTemplateOutlet="deltaTiempo; context: { d: tiempos().atencionDelta, previo: tiempos().atencionPrevia }" />
+          </div>
+        </div>
+      </div>
+
       <div class="grid gap-5 lg:grid-cols-3">
         <!-- Dona por categoría -->
         <div class="rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
@@ -300,6 +385,15 @@
                   <span class="hidden h-2 flex-1 rounded-full bg-neutral-100 sm:block">
                     <span class="block h-2 rounded-full bg-primary-500 transition-all duration-500" [style.width.%]="(f.resumen.totalEventos / maxFila()) * 100"></span>
                   </span>
+                  <span
+                    class="hidden w-32 shrink-0 text-right text-xs text-neutral-500 md:block"
+                    [attr.title]="'Llegada mediana · llegadas dentro de la meta'"
+                  >
+                    {{ minutos(f.resumen.tiempos.llegadaMedianaMinutos) }} ·
+                    <span class="font-bold" [class]="tonoCumplimiento(f.resumen.tiempos.cumplimientoPorcentaje)">
+                      {{ f.resumen.tiempos.cumplimientoPorcentaje === null ? '—' : f.resumen.tiempos.cumplimientoPorcentaje + '%' }}
+                    </span>
+                  </span>
                   <span class="w-28 shrink-0 text-right text-xs text-neutral-500">
                     <span class="text-danger-600">{{ total(f.resumen, CATEGORIA.Accidente) }} acc.</span> ·
                     <span class="text-primary-600">{{ total(f.resumen, CATEGORIA.Asistencia) }} asist.</span>
@@ -327,6 +421,18 @@
     </div>
   }
 </section>
+
+<!-- Variación de un tiempo vs. el período anterior: bajar es mejorar -->
+<ng-template #deltaTiempo let-d="d" let-previo="previo">
+  @if (d !== null && d !== 0) {
+    <span class="mt-auto pt-2 text-xs text-neutral-500">
+      <span class="font-bold" [class]="d < 0 ? 'text-secondary-700' : 'text-warning-800'">
+        {{ d < 0 ? '↓' : '↑' }} {{ minutos(d < 0 ? -d : d) }}
+      </span>
+      vs. {{ comparadoCon() }} ({{ minutos(previo) }})
+    </span>
+  }
+</ng-template>
 
 <ng-template #kpi let-titulo="titulo" let-k="k" let-color="color">
   <div class="flex flex-col rounded-2xl border border-neutral-100 bg-white p-5 shadow-sm">
