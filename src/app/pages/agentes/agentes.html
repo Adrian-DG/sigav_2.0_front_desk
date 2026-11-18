@@ -6,6 +6,9 @@
   <app-button moduloAcciones variant="ghost" [bloque]="false" [loading]="agentes.isLoading()" (click)="agentes.reload()">
     <app-icon name="actualizar" class="h-4 w-4" /> Actualizar
   </app-button>
+  <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="reporteAbierto.set(true)">
+    <app-icon name="descargar" class="h-4 w-4" /> Reporte de eventos
+  </app-button>
   @if (puedeGestionar()) {
     <app-button moduloAcciones variant="ghost" [bloque]="false" (click)="abrirImportacion()">Cargar Excel</app-button>
   }
@@ -165,3 +168,5 @@
 <app-editar-agente [agente]="editando()" (cerrar)="editando.set(null)" (guardado)="guardado($event)" />
 
 <app-importar-agentes [abierto]="importando()" (cerrar)="importando.set(false)" (importado)="importado($event)" />
+
+<app-reporte-eventos [abierto]="reporteAbierto()" (cerrar)="reporteAbierto.set(false)" />

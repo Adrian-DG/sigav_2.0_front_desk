@@ -1,0 +1,65 @@
+<app-dialogo
+  [abierto]="abierto()"
+  titulo="Reporte de eventos por agente"
+  descripcion="Excel con las asistencias, accidentes y total de eventos atendidos por cada agente."
+  [ocupado]="descargando()"
+  (cerrar)="cerrar.emit()"
+>
+  <fieldset class="flex flex-col gap-4" [disabled]="descargando()">
+    <div class="flex flex-wrap gap-2">
+      <button type="button" class="rounded-lg bg-neutral-100 px-3 py-1.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-200" (click)="usarPeriodo('mes')">
+        Mes en curso
+      </button>
+      <button type="button" class="rounded-lg bg-neutral-100 px-3 py-1.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-200" (click)="usarPeriodo('mes-anterior')">
+        Mes anterior
+      </button>
+      <button type="button" class="rounded-lg bg-neutral-100 px-3 py-1.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-200" (click)="usarPeriodo('anio')">
+        Año en curso
+      </button>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <app-filtro etiqueta="Desde">
+        <input type="date" class="control w-full" [value]="desde()" [max]="hasta() || null" (change)="desde.set($any($event.target).value)" />
+      </app-filtro>
+      <app-filtro etiqueta="Hasta">
+        <input type="date" class="control w-full" [value]="hasta()" [min]="desde() || null" (change)="hasta.set($any($event.target).value)" />
+      </app-filtro>
+      <app-filtro etiqueta="Área operativa">
+        <select class="control w-full" (change)="area.set(numeroONulo($any($event.target).value))">
+          <option value="" [selected]="area() === null">Todas</option>
+          @for (a of areas; track a.valor) {
+            <option [value]="a.valor" [selected]="area() === a.valor">{{ a.label }}</option>
+          }
+        </select>
+      </app-filtro>
+      <app-filtro etiqueta="Institución">
+        <select class="control w-full" (change)="institucion.set(numeroONulo($any($event.target).value))">
+          <option value="" [selected]="institucion() === null">Todas</option>
+          @for (i of instituciones; track i.valor) {
+            <option [value]="i.valor" [selected]="institucion() === i.valor">{{ i.label }}</option>
+          }
+        </select>
+      </app-filtro>
+    </div>
+
+    <label class="flex items-center gap-2 text-sm font-semibold text-neutral-600">
+      <input type="checkbox" class="h-4 w-4 rounded accent-primary-500" [checked]="mensual()" (change)="mensual.set($any($event.target).checked)" />
+      Incluir el conteo por mes (hoja adicional)
+    </label>
+
+    <p class="rounded-xl bg-neutral-50 px-4 py-3 text-sm text-neutral-600">
+      Se cuentan los eventos no anulados por su fecha de reporte, cuando el agente operaba la unidad principal o una de apoyo.
+      Un evento con asistencia y accidente suma en ambas columnas, pero una sola vez en el total.
+    </p>
+
+    @if (error()) {
+      <p class="rounded-xl bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-700" role="alert">{{ error() }}</p>
+    }
+  </fieldset>
+
+  <app-button dialogoAcciones variant="ghost" [bloque]="false" [disabled]="descargando()" (click)="cerrar.emit()">Cancelar</app-button>
+  <app-button dialogoAcciones [bloque]="false" [loading]="descargando()" (click)="descargar()">
+    <app-icon name="descargar" class="h-4 w-4" /> Descargar Excel
+  </app-button>
+</app-dialogo>

@@ -19,6 +19,7 @@ import { Paginador } from '../../shared/components/paginador/paginador';
 import { AREAS_OPERATIVAS, type Agente, type ImportacionAgentesResultado } from './agentes.model';
 import { EditarAgente } from './editar-agente/editar-agente';
 import { ImportarAgentes } from './importar-agentes/importar-agentes';
+import { ReporteEventos } from './reporte-eventos/reporte-eventos';
 
 const TAMANO_PAGINA = 20;
 
@@ -30,7 +31,8 @@ type Autorizacion = 'todos' | 'autorizados' | 'pendientes';
  * El interruptor de cada fila autoriza o quita el acceso a la app (PATCH /agentes/{id}/autorizacion);
  * al quitarlo, la API rechaza de inmediato la sesión que el agente tenga abierta. "Editar" cambia
  * sus datos, rango o especialidad (PUT /agentes/{id}). "Cargar Excel" crea o actualiza agentes en
- * bloque (POST /agentes/importar).
+ * bloque (POST /agentes/importar). "Reporte de eventos" descarga el Excel de eventos atendidos por
+ * agente (GET /agentes/reporte-eventos).
  */
 @Component({
   selector: 'app-agentes',
@@ -48,6 +50,7 @@ type Autorizacion = 'todos' | 'autorizados' | 'pendientes';
     Icon,
     EditarAgente,
     ImportarAgentes,
+    ReporteEventos,
   ],
   templateUrl: './agentes.html',
 })
@@ -106,6 +109,7 @@ export class Agentes {
   private readonly avisos = inject(AvisosService);
   protected readonly editando = signal<Agente | null>(null);
   protected readonly importando = signal(false);
+  protected readonly reporteAbierto = signal(false);
 
   protected alternarAutorizacion(agente: Agente): void {
     this.cambiarAutorizacion(agente, !agente.autorizado, true);
