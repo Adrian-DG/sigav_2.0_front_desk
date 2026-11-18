@@ -15,6 +15,8 @@ export const Permisos = {
   Usuarios: 'usuarios.gestionar',
   Calidad: 'calidad.evaluar',
   EncuestasCalidad: 'calidad.encuestas',
+  /** Datos clínicos de las atenciones prehospitalarias (ambulancia). */
+  Prehospitalaria: 'prehospitalaria.ver',
 } as const;
 
 export type Permiso = (typeof Permisos)[keyof typeof Permisos];
