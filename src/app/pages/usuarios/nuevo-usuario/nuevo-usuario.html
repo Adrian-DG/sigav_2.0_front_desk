@@ -114,29 +114,20 @@
     </fieldset>
 
     <!-- Permisos iniciales -->
-    <fieldset [disabled]="guardando()">
-      <legend class="mb-3 text-xs font-bold tracking-wider text-neutral-500 uppercase">Permisos iniciales</legend>
+    <section>
+      <h3 class="mb-3 text-xs font-bold tracking-wider text-neutral-500 uppercase">Permisos iniciales</h3>
       @if (permisos().length === 0) {
         <p class="text-sm text-neutral-500">No se pudo cargar el catálogo de permisos; puede asignarlos después.</p>
       } @else {
-        <div class="grid gap-2 sm:grid-cols-2">
-          @for (p of permisos(); track p.nombre) {
-            <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-neutral-200 px-3 py-2.5 hover:bg-neutral-50">
-              <input
-                type="checkbox"
-                class="mt-0.5 h-4 w-4 shrink-0 accent-primary-500"
-                [checked]="form().permisos.has(p.nombre)"
-                (change)="alternarPermiso(p.nombre, $any($event.target).checked)"
-              />
-              <span class="min-w-0">
-                <span class="block text-sm font-bold text-neutral-900">{{ p.modulo }}</span>
-                <span class="block text-xs text-neutral-500">{{ p.descripcion }}</span>
-              </span>
-            </label>
-          }
-        </div>
+        <app-selector-permisos
+          [catalogo]="permisos()"
+          [seleccion]="form().permisos"
+          (seleccionChange)="cambiarPermisos($event)"
+          [deshabilitado]="guardando()"
+          [columnas]="true"
+        />
       }
-    </fieldset>
+    </section>
   </form>
 
   @if (errorGeneral()) {

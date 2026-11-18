@@ -9,6 +9,7 @@ import { huella } from '../../../core/utils/huella';
 import { mensajeDeError } from '../../../core/utils/formato';
 import { Button } from '../../../shared/components/button/button';
 import { Dialogo, DialogoAcciones } from '../../../shared/components/dialogo/dialogo';
+import { SelectorPermisos } from '../selector-permisos/selector-permisos';
 import type { CatalogosUsuario, PermisoInfo } from '../usuarios.model';
 
 /** Institución cuyos rangos tienen nombre propio (Domain InstitucionEnum.ARD, ver Rango.NombreArmada). */
@@ -59,7 +60,7 @@ const REGLAS_PASSWORD: { texto: string; cumple: (p: string) => boolean }[] = [
 @Component({
   selector: 'app-nuevo-usuario',
   standalone: true,
-  imports: [Dialogo, DialogoAcciones, Button, NgTemplateOutlet],
+  imports: [Dialogo, DialogoAcciones, Button, NgTemplateOutlet, SelectorPermisos],
   templateUrl: './nuevo-usuario.html',
 })
 export class NuevoUsuario {
@@ -143,13 +144,8 @@ export class NuevoUsuario {
     if (this.erroresApi()[campo]) this.erroresApi.update(({ [campo]: _, ...resto }) => resto);
   }
 
-  protected alternarPermiso(permiso: string, marcado: boolean): void {
-    this.form.update((f) => {
-      const permisos = new Set(f.permisos);
-      if (marcado) permisos.add(permiso);
-      else permisos.delete(permiso);
-      return { ...f, permisos };
-    });
+  protected cambiarPermisos(permisos: ReadonlySet<string>): void {
+    this.form.update((f) => ({ ...f, permisos }));
   }
 
   protected rangoLabel(rango: { nombre: string; nombreArmada: string }): string {

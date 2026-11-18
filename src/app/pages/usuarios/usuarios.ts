@@ -18,6 +18,7 @@ import { Icon } from '../../shared/components/icon/icon';
 import { ModulePage, ModuloAcciones, ModuloFiltros } from '../../shared/components/module-page/module-page';
 import { Paginador } from '../../shared/components/paginador/paginador';
 import { NuevoUsuario } from './nuevo-usuario/nuevo-usuario';
+import { SelectorPermisos } from './selector-permisos/selector-permisos';
 import type { PermisoInfo, Usuario } from './usuarios.model';
 
 const TAMANO_PAGINA = 20;
@@ -46,6 +47,7 @@ const TAMANO_PAGINA = 20;
     Dialogo,
     DialogoAcciones,
     NuevoUsuario,
+    SelectorPermisos,
   ],
   templateUrl: './usuarios.html',
 })
@@ -73,8 +75,9 @@ export class Usuarios {
   protected readonly error = computed(() => mensajeDeError(this.usuarios.error()));
 
   protected readonly catalogo = httpResource<PermisoInfo[]>(() => `${environment.apiUrl}/usuarios/permisos`);
-  private readonly modulos = computed(
-    () => new Map((this.catalogo.hasValue() ? this.catalogo.value() : []).map((p) => [p.nombre, p.modulo])),
+  /** Nombres del catálogo: solo esos se comparan y se envían (la API rechaza los desconocidos). */
+  private readonly enCatalogo = computed(
+    () => new Set((this.catalogo.hasValue() ? this.catalogo.value() : []).map((p) => p.nombre)),
   );
 
   protected readonly miId = computed(() => this.auth.sesion()?.userId ?? null);
@@ -102,15 +105,15 @@ export class Usuarios {
   protected readonly hayCambios = computed(() => {
     const usuario = this.editando();
     if (!usuario) return false;
-    const actuales = new Set(usuario.permisos.filter((p) => this.modulos().has(p)));
+    const actuales = new Set(usuario.permisos.filter((p) => this.enCatalogo().has(p)));
     const nuevos = this.seleccion();
     return actuales.size !== nuevos.size || [...nuevos].some((p) => !actuales.has(p));
   });
 
   /** No se puede quitar uno mismo el permiso de gestionar usuarios (la API también lo impide). */
-  protected bloqueado(permiso: string): boolean {
-    return permiso === this.permisoGestionar && this.editando()?.id === this.miId();
-  }
+  protected readonly bloqueados = computed<ReadonlySet<string>>(() =>
+    this.editando() && this.editando()!.id === this.miId() ? new Set([this.permisoGestionar]) : new Set(),
+  );
 
   protected abrir(usuario: Usuario): void {
     this.editando.set(usuario);
@@ -118,19 +121,12 @@ export class Usuarios {
     this.errorGuardar.set(null);
   }
 
-  protected alternar(permiso: string, marcado: boolean): void {
-    const nueva = new Set(this.seleccion());
-    if (marcado) nueva.add(permiso);
-    else nueva.delete(permiso);
-    this.seleccion.set(nueva);
-  }
-
   protected guardar(): void {
     const usuario = this.editando();
     if (!usuario || this.guardando()) return;
 
     // Solo se envían los del catálogo: la API rechaza nombres desconocidos
-    const permisos = [...this.seleccion()].filter((p) => this.modulos().has(p));
+    const permisos = [...this.seleccion()].filter((p) => this.enCatalogo().has(p));
     this.guardando.set(true);
     this.errorGuardar.set(null);
 

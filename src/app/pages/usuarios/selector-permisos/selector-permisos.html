@@ -1,0 +1,89 @@
+<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+  <p class="text-sm text-neutral-500">
+    <strong class="text-neutral-900">{{ totalMarcados() }}</strong> de {{ catalogo().length }} permisos marcados
+  </p>
+  <div class="flex gap-1">
+    <button
+      type="button"
+      class="rounded-lg px-2.5 py-1 text-xs font-bold text-primary-600 hover:bg-primary-50 disabled:text-neutral-400 disabled:hover:bg-transparent"
+      [disabled]="deshabilitado() || totalMarcados() === catalogo().length"
+      (click)="marcarTodos(true)"
+    >
+      Marcar todos
+    </button>
+    <button
+      type="button"
+      class="rounded-lg px-2.5 py-1 text-xs font-bold text-primary-600 hover:bg-primary-50 disabled:text-neutral-400 disabled:hover:bg-transparent"
+      [disabled]="deshabilitado() || totalMarcados() === 0"
+      (click)="marcarTodos(false)"
+    >
+      Quitar todos
+    </button>
+  </div>
+</div>
+
+<div class="grid gap-3" [class.sm:grid-cols-2]="columnas()">
+  @for (modulo of modulos(); track modulo.nombre) {
+    @let marcados = marcadosEn(modulo);
+    <fieldset
+      class="overflow-hidden rounded-xl border transition-colors"
+      [class]="marcados > 0 ? 'border-primary-200' : 'border-neutral-200'"
+      [disabled]="deshabilitado()"
+    >
+      <legend class="sr-only">Módulo {{ modulo.nombre }}</legend>
+      <label
+        class="flex cursor-pointer items-center gap-3 border-b px-4 py-2.5"
+        [class]="marcados > 0 ? 'border-primary-100 bg-primary-50/60' : 'border-neutral-100 bg-neutral-50'"
+      >
+        <input
+          type="checkbox"
+          class="h-4 w-4 shrink-0 accent-primary-500"
+          [checked]="marcados === modulo.permisos.length"
+          [indeterminate]="marcados > 0 && marcados < modulo.permisos.length"
+          [attr.aria-label]="'Todos los permisos de ' + modulo.nombre"
+          (change)="alternarModulo(modulo, $any($event.target).checked)"
+        />
+        <span class="min-w-0 flex-1 text-sm font-extrabold text-neutral-900">{{ modulo.nombre }}</span>
+        <span class="text-xs font-semibold whitespace-nowrap" [class]="marcados > 0 ? 'text-primary-700' : 'text-neutral-400'">
+          {{ marcados }}/{{ modulo.permisos.length }}
+        </span>
+      </label>
+
+      <ul class="divide-y divide-neutral-100">
+        @for (p of modulo.permisos; track p.nombre) {
+          <li>
+            <label
+              class="flex items-start gap-3 py-2.5 pr-4 pl-4 transition-colors"
+              [class.pl-9]="!!p.requiere"
+              [class.cursor-pointer]="!fijo(p.nombre)"
+              [class.cursor-not-allowed]="fijo(p.nombre)"
+              [class.hover:bg-neutral-50]="!fijo(p.nombre)"
+            >
+              <input
+                type="checkbox"
+                class="mt-0.5 h-4 w-4 shrink-0 accent-primary-500"
+                [checked]="marcado(p.nombre)"
+                [disabled]="fijo(p.nombre)"
+                (change)="alternar(p.nombre, $any($event.target).checked)"
+              />
+              <span class="min-w-0">
+                <span class="block text-sm font-bold text-neutral-900">{{ p.titulo }}</span>
+                <span class="block text-xs text-neutral-500">{{ p.descripcion }}</span>
+                @if (p.requiere) {
+                  <span class="mt-1 block text-xs text-neutral-400">Incluye «{{ titulo(p.requiere) }}».</span>
+                }
+                @if (fijo(p.nombre)) {
+                  <span class="mt-1 block text-xs font-semibold text-warning-800">
+                    {{ bloqueados().has(p.nombre) ? 'No puede quitarse este permiso a sí mismo.' : 'Lo requiere un permiso que no puede quitarse.' }}
+                  </span>
+                } @else if (marcado(p.nombre) && dependientesMarcados(p.nombre).length) {
+                  <span class="mt-1 block text-xs text-neutral-400">Quitarlo quita también «{{ dependientesMarcados(p.nombre).join('», «') }}».</span>
+                }
+              </span>
+            </label>
+          </li>
+        }
+      </ul>
+    </fieldset>
+  }
+</div>

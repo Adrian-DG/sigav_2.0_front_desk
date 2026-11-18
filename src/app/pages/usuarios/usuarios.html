@@ -80,6 +80,7 @@
 
 <app-dialogo
   #dialogoPermisos
+  ancho="amplio"
   [abierto]="!!editando()"
   titulo="Editar usuario"
   [descripcion]="editando() ? (editando()!.nombreCompleto || editando()!.userName) + ' · ' + editando()!.userName : ''"
@@ -122,37 +123,14 @@
   } @else if (!catalogo.hasValue()) {
     <p class="py-6 text-center text-sm text-neutral-500">Cargando permisos…</p>
   } @else {
-    <fieldset>
-      <legend class="mb-3 text-sm text-neutral-500">Marque los módulos a los que tendrá acceso.</legend>
-      <ul class="flex flex-col gap-2">
-        @for (p of catalogo.value(); track p.nombre) {
-          <li>
-            <label
-              class="flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition-colors"
-              [class]="seleccion().has(p.nombre) ? 'border-primary-200 bg-primary-50/50' : 'border-neutral-200 hover:bg-neutral-50'"
-              [class.cursor-not-allowed]="bloqueado(p.nombre)"
-            >
-              <input
-                type="checkbox"
-                class="mt-0.5 h-4 w-4 shrink-0 accent-primary-500"
-                [checked]="seleccion().has(p.nombre)"
-                [disabled]="guardando() || bloqueado(p.nombre)"
-                (change)="alternar(p.nombre, $any($event.target).checked)"
-              />
-              <span class="min-w-0">
-                <span class="block text-sm font-bold text-neutral-900">{{ p.modulo }}</span>
-                <span class="block text-sm text-neutral-500">{{ p.descripcion }}</span>
-                @if (bloqueado(p.nombre)) {
-                  <span class="mt-1 block text-xs font-semibold text-warning-800">
-                    No puede quitarse este permiso a sí mismo.
-                  </span>
-                }
-              </span>
-            </label>
-          </li>
-        }
-      </ul>
-    </fieldset>
+    <p class="mb-3 text-sm text-neutral-500">Marque lo que podrá hacer en cada módulo.</p>
+    <app-selector-permisos
+      [catalogo]="catalogo.value()"
+      [(seleccion)]="seleccion"
+      [bloqueados]="bloqueados()"
+      [deshabilitado]="guardando()"
+      [columnas]="true"
+    />
     <p class="mt-4 text-xs text-neutral-500">
       Los cambios se aplican cuando el usuario vuelve a iniciar sesión.
     </p>

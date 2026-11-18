@@ -14,8 +14,13 @@ export type Usuario = {
 /** Mirrors Application/Contracts/Authentication/Permisos.cs PermisoInfo (GET /usuarios/permisos). */
 export type PermisoInfo = {
   nombre: string;
+  /** Módulo del front desk que agrupa el permiso. */
   modulo: string;
+  /** Nombre corto del permiso dentro de su módulo. */
+  titulo: string;
   descripcion: string;
+  /** Permiso que se otorga junto con este (sin él no sirve). */
+  requiere: string | null;
 };
 
 /** Mirrors Application/Features/Usuarios/CrearUsuario.cs CatalogosUsuarioViewModel (GET /usuarios/catalogos). */
